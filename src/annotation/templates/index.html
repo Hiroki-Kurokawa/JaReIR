@@ -24,18 +24,17 @@
   textarea { width:100%; max-width:760px; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px; }
   .incomplete-outline { outline:2px solid #ff6666; }
   .example-box {
-    border: 1px solid #ccc;   /* 枠線 */
-    border-radius: 6px;       /* 角を丸める（不要なら消す） */
-    padding: 10px;            /* 内側の余白 */
-    margin: 12px 0;           /* 上下の余白 */
-    background: #fdfdfd;      /* 背景を少し白寄りに */
+    border: 1px solid #ccc;   
+    border-radius: 6px;      
+    padding: 10px;           
+    margin: 12px 0;          
+    background: #fdfdfd; 
   }
   h3 {
-  border-bottom: 1px solid #616161; /* 下線 */
-  padding-bottom: 4px;           /* 下線と文字の間隔 */
-  margin-bottom: 8px;            /* 下線と次要素の間隔 */
+  border-bottom: 1px solid #616161; 
+  padding-bottom: 4px;     
+  margin-bottom: 8px;          
   }
-  /* 質問をスクロール時に上部に固定 */
   #question-bar {
     position: sticky;
     border: 3px solid #ccc;
@@ -48,7 +47,6 @@
     left: 50%;
     transform: translateX(-0.85%);
     font-size: 12px;
-    /* ※ border や padding が幅の計算に影響しないようにする */
     box-sizing: border-box;
     -webkit-touch-callout: none;
      -webkit-user-select: none;
@@ -78,33 +76,22 @@
         <li>不要な記号が含まれている</li>
       </ol>
       <p>このような場合は<strong>「文章:不適切」</strong>を選んでください。</p>
-      <!-- <p>次に、<strong>「質問:不適切」</strong>は質問文だけでは意味が完結していない、もしくは以下の条件を満たさないことを表します．</p>
-      <ol>
-        <li><strong>【質問】が直示表現（「いま」など）を含まないこと (ただし、質問内で意味が完結する場合は除く)</strong></li>
-        <li><strong>趣味や個人的な意見を求める内容ではないこと</strong></li>
-        <li><strong>画像の認識やリンク先の参照を必要としないこと</strong></li>
-        <li><strong>質問が日本語であること</strong></li>
-      </ol> -->
       <p>「関連している」、「関連していない」、「文章:不適切」は以下の例を参考にしてください。</p>
       <h3>「関連している」例:</h3>
         <div class="example-box">
           <p><strong>質問:</strong></p>
-          <p>曲ってどんな構成で出来ているのですか？メロディとドラムと後なんですか？</p>
+          <p>Yahoo! chiebukuro question</p>
           <p><strong>文章:</strong></p>
           <p>音楽 音楽行為.<br />音楽行為に関しては、現代では一般的に「作曲」「演奏」「鑑賞」が基本として考えられている。作曲とは、作曲者の心に感じた事を音によって表現することである。演奏とは、再現芸術ともよばれ、作曲された音楽を実際に音として表現する行為であり、原曲を変え（＝編曲）つつ演奏したり、声楽曲を器楽曲に変える（編曲）等した上で演奏する行為も演奏行為とされる。（#演奏）。鑑賞とは、音楽を聴いてそれを味わったり、価値を見極めたりすることである。</p>
         </div>
       <h3>「関連していない」例:</h3>
         <div class="example-box">
           <p><strong>質問:</strong></p>
-          <p>曲ってどんな構成で出来ているのですか？メロディとドラムと後なんですか？</p>
+          <p>Yahoo! chiebukuro question</p>
           <p><strong>文章:</strong></p>
           <p>音楽 音楽と健康.<br />音楽のなだめるようなやる気を起こさせる音は、心臓血管の健康へのさまざまな利点を含む、幅広い健康上の利点を提供する。適切な状況で適切な種類の音楽を使用すると、ニーズに応じて、感情的な状態と全体的な健康状態を向上させることができる。</p>
         </div>
-      <!-- <h3>「質問:不適切」例:</h3>
-        <div class="example-box">
-          <p><strong>質問:</strong></p>
-          <p>この式でr≫dのとき、どのように式変形したか詳しく教えてほしいです</p>
-        </div> -->
+
       <h3>「文章:不適切」例:</h3>
         <div class="example-box">
           <p><strong>文章:</strong></p>
@@ -133,7 +120,7 @@
       <h3>「記述ができる」例:</h3>
         <div class="example-box">
         <div><strong>質問</strong></div>
-        <div>民法で言う「当事者」とは原告被告だけではありませんか？ 例えば、原告被告の他に、原告の知人も事件に関係していると当事者と言いますか？</div>
+        <div>Yahoo! chiebukuro question</div>
         <div><strong>文章:</strong></div>
         <div>当事者適格</div>
         <div>個々の訴訟において、当事者として訴訟を追行し、判決などの名宛人となることができる資格を当事者適格という。</div>
@@ -144,7 +131,7 @@
         <h3>「記述ができない」例:</h3>
         <div class="example-box">
         <div><strong>質問</strong></div>
-        <div>民法で言う「当事者」とは原告被告だけではありませんか？ 例えば、原告被告の他に、原告の知人も事件に関係していると当事者と言いますか？</div>
+        <div>Yahoo! chiebukuro question</div>
         <div><strong>文章:</strong></div>
         <div>当事者 当事者（とうじしゃ、）は、直接ある事柄、事件または法律関係に関係している者をいう。対義語は第三者。</div>
         <div><strong>記述:</strong></div>
@@ -160,9 +147,8 @@
   </ul>
 <div id="question-bar">
   <h2><strong>【質問】</strong><br><span id="topic">{$topic}</span></h2>
-  <!-- <div class="meta">qid: <span id="qid">{$qid}</span></div> -->
 </div>
-<!-- 生データ（サーバが置換） -->
+
 <div id="did_raw" style="display:none">{$did}</div>
 <div id="psg_raw" style="display:none">{$psg}</div>
 

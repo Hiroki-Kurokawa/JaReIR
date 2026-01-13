@@ -21,9 +21,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import re
 
-# App setup
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
-#app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-fixed-secret-key-change-this-in-production')
 secret = os.environ.get("FLASK_SECRET_KEY")
 if not secret:
@@ -34,11 +32,10 @@ BASE_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 OUTPUT_DIR = os.path.join(DATA_DIR, 'outputs')
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
-INDEX_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, 'index2.html')
+INDEX_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, 'index.html')
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# In-memory cache of loaded CSVs to avoid re-reading every time
 _TASK_CACHE: Dict[str, List[Dict[str, str]]] = {}
 
 
@@ -70,10 +67,6 @@ def audit_log(event: str, **fields):
 def hash_text(s: str) -> str:
     return hashlib.sha256((s or "").encode("utf-8")).hexdigest()
 
-def _normalize_header(name: str) -> str:
-    return name.strip().lower().replace(" ", "_")
-
-
 def load_tasks(csv_path: str) -> List[Dict[str, str]]:
     """Load tasks from a CSV file.
     Supports two CSV formats:
@@ -89,15 +82,12 @@ def load_tasks(csv_path: str) -> List[Dict[str, str]]:
 
     tasks: List[Dict[str, str]] = []
     df = pd.read_csv(csv_path, dtype=str)
-    df.columns = [_normalize_header(col) for col in df.columns]
     for _, row in df.iterrows():
         task_row = row.to_dict()
-        #print("Row:", task_row)  # debug
         task_row["psg"] = re.sub(r'_dup\d+', '', task_row["psg"])
         tasks.append(task_row)
 
     _TASK_CACHE[csv_path] = tasks
-    # print(tasks)  # debug
     return tasks
 
 
@@ -109,7 +99,7 @@ def root():
 def complete():
     worker_id = session.get('worker_id')
     if not worker_id:
-        return redirect(url_for('worker_default', _external=True))  # ←ここ
+        return redirect(url_for('worker_default', _external=True)) 
 
     ended_at_iso = datetime.now(timezone.utc).isoformat()
     started_at_iso = session.get('started_at_iso')
@@ -122,10 +112,6 @@ def worker_default():
 
 @app.route('/worker/<task_set_id>', methods=['GET', 'POST'])
 def worker(task_set_id):
-    """
-    Initial page for worker to enter worker_id for a specific task set.
-    The task set (e.g., '0') is specified in the URL.
-    """
     
     # URL の <task_set_id> から CSV 名とパスを構築
     csv_name = f"{task_set_id}.csv"
@@ -221,10 +207,7 @@ def consent(task_set_id):
 
 @app.route('/task')
 def task_page():
-    """Render the task page using index2.html (single query with potentially multiple docs).
-    index2.html uses non-numbered placeholders: {$topic}, {$psg}, {$did}, {$qid}.
-    For backward compatibility we also still replace numbered forms {$topic1}.. if they exist.
-    """
+
     worker_id = session.get('worker_id')
     csv_path = session.get('csv_path')
     if not worker_id or not csv_path:
@@ -233,7 +216,6 @@ def task_page():
         return redirect(url_for('consent', task_set_id=session.get('task_set_id', '0'), _external=True))
 
     tasks = load_tasks(csv_path)
-    topic = tasks[0]["topic"]
     qids = tasks[0]["qid"]
     psgs = [t["psg"] for t in tasks]
     dids = [t["did"] for t in tasks]
@@ -243,29 +225,21 @@ def task_page():
         worker_id=worker_id,
         task_set_id=session.get("task_set_id"),
         qid=qids,
-        dids=dids[:5],             # 長いなら先頭だけ or 件数だけでもOK
+        dids=dids[:5],             
         did_count=len(dids),
-        psg_hashes=[hash_text(p) for p in psgs],  # 本文は残さずハッシュで
+        psg_hashes=[hash_text(p) for p in psgs],  
     )
-    #print(tasks)
 
-    per_page = 1
-    session['tasks_per_page'] = per_page
-    total_pages = 1
+    session['tasks_per_page'] = 1
 
     try:
         page = int(request.args.get('page', '1'))
     except ValueError:
         page = 1
  
-    #print(len(page_tasks), "tasks on page", page, "of", total_pages)
-
     with open(INDEX_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
         html = f.read()
 
-    # Replacement strategy:
-    # 1) If non-numbered placeholders exist (index2 format), fill the first task only.
-    # 2) Additionally replace numbered placeholders for compatibility.
     assert len(set([t['topic'] for t in tasks])) == 1, "All topics must be the same for index2.html"
     if '{$topic}' in html or '{$psg}' in html or '{$did}' in html or '{$qid}' in html:
         #first = page_tasks[0] if page_tasks else {'topic': '', 'psg': '', 'did': '', 'qid': ''}
@@ -276,15 +250,9 @@ def task_page():
         html = html.replace('{$topic}', escape(topics))
         html = html.replace('{$psg}', escape(psgs))
         html = html.replace('{$did}', dids)
-        # html = html.replace('{$qid}', qids)
-    #print(html)
-    # Numbered placeholders (legacy) — in case template still has them.
-    #print(html)
 
-    #print("Tasks meta:", tasks_meta)
     submit_url = "https://www.lsta.media.kyoto-u.ac.jp/demo/reasonIR/submit"
     print("Submit URL:", submit_url)
-    # JSON 文字列化して JS に埋め込む
     submit_url_json = json.dumps(submit_url)
 
     submit_ui = f"""
@@ -350,7 +318,7 @@ def task_page():
         }}
 
         window.__TASK_PAGE__ = {page};
-        window.__TOTAL_PAGES__ = {total_pages};
+        window.__TOTAL_PAGES__ = {1};
 
         function collectAnswers() {{
             const results = [];
@@ -471,10 +439,7 @@ def task_page():
 
 @app.post('/submit')
 def submit_results():
-    # print("Received submission")
-    # print("Received submission")
-    # print("Session data:", dict(session))  # セッション内容を確認
-    # print("Request headers:", dict(request.headers))  # ヘッダー確認
+
     if not session.get("consented"):
         return jsonify({'error': 'not consented'}), 403
     worker_id = session.get('worker_id')
@@ -555,30 +520,6 @@ def submit_results():
     }
     atomic_write_json(json_path, doc)
 
-    # Append rows to CSV
-    # need_header = not os.path.exists(csv_path)
-    # with open(csv_path, 'a', newline='', encoding='utf-8') as f:
-    #     writer = csv.writer(f)
-    #     if need_header:
-    #         writer.writerow([
-    #             'timestamp', 'worker_id', 'page',
-    #             'started_at_client', 'finished_at_client', 'elapsed_client_seconds',
-    #             'started_at_server', 'finished_at_server', 'elapsed_server_seconds',
-    #             'global_index', 'qid', 'did', 'relevance', 'can_describe', 'reason_text'
-    #         ])
-    #     for r in results:
-    #         writer.writerow([
-    #             ts, worker_id, page,
-    #             started_at_client, finished_at_client, elapsed_client if elapsed_client is not None else '',
-    #             started_at_server, finished_at_server, elapsed_server if elapsed_server is not None else '',
-    #             r.get('global_index', ''), r.get('qid', ''), r.get('did', ''), r.get('relevance', ''), r.get('can_describe', ''),
-    #             (r.get('reason_text', '') or '').replace('\n', ' ').strip()
-    #         ])
-
-    # Compute next URL if more pages exist
-    #csv_tasks = load_tasks(session['csv_path']) if session.get('csv_path') else []
-    per_page = int(session.get('tasks_per_page', 3) or 3)
-    per_page = max(1, min(3, per_page))
     #total_pages = (len(csv_tasks) + per_page - 1) // per_page if per_page > 0 else 0
     total_pages = 1  
     next_url = None
