@@ -1,0 +1,6 @@
+top_k: 100
+index_root: data/interim/index
+
+paths:
+  retrieval_results_save_path: report/retrieval_results
+  eval_results_save_path: report/metrics/eval_results_1214_only_labelled

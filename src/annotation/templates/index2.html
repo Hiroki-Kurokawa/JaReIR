@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>質問と文章の推論理由の記述</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; line-height:1.6; color:#333; margin:20px; }
+  h1,h2 { border-bottom:1px solid #ccc; padding-bottom:6px; }
+  .highlight { background:#fcff00; }
+  .doc-container { border:1px solid #e0e0e0; border-radius:8px; padding:14px; margin:18px 0; background:#f9f9f9; }
+  .doc-header { font-weight:600; color:#005a9c; margin-bottom:6px; }
+  .doc-id { font-size:12px; color:#555; margin-bottom:4px; }
+  .passage-box { background:#fff; border:1px solid #ddd; border-radius:5px; padding:10px; white-space:pre-wrap; font-size:14px; -webkit-touch-callout: none;
+     -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;}
+  table { margin-top:8px; border-collapse:collapse; }
+  td { padding:4px 10px 4px 0; }
+  label { cursor:pointer; display:flex; align-items:center; font-size:14px; }
+  input[type=radio]{ margin-right:6px; }
+  .reason-section { display:none; margin-top:10px; padding:10px; border-left:3px solid #007bff; background:#f0f8ff; }
+  .reason-textarea-container { display:none; margin-top:8px; }
+  textarea { width:100%; max-width:760px; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px; }
+  .incomplete-outline { outline:2px solid #ff6666; }
+  .example-box {
+    border: 1px solid #ccc;   /* 枠線 */
+    border-radius: 6px;       /* 角を丸める（不要なら消す） */
+    padding: 10px;            /* 内側の余白 */
+    margin: 12px 0;           /* 上下の余白 */
+    background: #fdfdfd;      /* 背景を少し白寄りに */
+  }
+  h3 {
+  border-bottom: 1px solid #616161; /* 下線 */
+  padding-bottom: 4px;           /* 下線と文字の間隔 */
+  margin-bottom: 8px;            /* 下線と次要素の間隔 */
+  }
+  /* 質問をスクロール時に上部に固定 */
+  #question-bar {
+    position: sticky;
+    border: 3px solid #ccc;
+    border-radius: 6px;
+    top: 0;
+    z-index: 1000;
+    background: #fff;
+    padding: 4px 0px;
+    width: 99vw;
+    left: 50%;
+    transform: translateX(-0.85%);
+    font-size: 12px;
+    /* ※ border や padding が幅の計算に影響しないようにする */
+    box-sizing: border-box;
+    -webkit-touch-callout: none;
+     -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+  <h1>質問と文章の関連性確認および記述作業</h1>
+    <p><strong><span class="highlight">必ず、以下の説明文をよく読んでから作業してください</span></strong>。<strong>適切に作業をしていただかない場合は、作業を却下する場合があります。</strong></p>
+    <p>この作業では、【質問】と【文章】が提示されます。これらに基づいて、以下の作業を行ってください。</p>
+    <h2>1. 関連性確認</h2>
+      <p>初めに、【<strong>質問</strong>】が【<strong>文章</strong>】に関連しているかを：<strong>「関連している」 / 「関連していない」 / 「文章:不適切」</strong>で判定してください。
+      <br />「<strong>関連している</strong>」 とは、【文章】が【質問】の<span class="highlight"><strong>答えになりうる情報、または答えを導くためのヒントを含んでいることを意味します。</strong></span>
+        単に同じ単語が出てくるだけでは「関連している」としないでください。もし、「関連している」と判断した場合は、<strong>【関連理由の推論記述】</strong>に進んでください。<br />
+      次に、<strong>「関連していない」</strong>とは、【文章】が【質問】の
+      <span class="highlight"><strong>答えになりうる情報や、答えを導くためのヒントを含まないこと</strong></span>を意味します。
+      文章が質問の話題に少し触れていても、質問に答える根拠やヒントが含まれない場合（例：同じ単語が出るだけ、別の意味で使われている、質問の焦点とずれている）も<strong>「関連していない」</strong>としてください。<br />
+      最後に、<strong>「文章:不適切」</strong>とは、<strong>【文章】が適切な文章でない場合</strong>を指します。例えば、以下のような場合です：</p>
+      <ol>
+        <li>文章が単語の羅列</li>
+        <li>文章が日本語ではない</li>
+        <li>文字化けしている</li>
+        <li>文章が途中で区切られる</li>
+        <li>不要な記号が含まれている</li>
+      </ol>
+      <p>このような場合は<strong>「文章:不適切」</strong>を選んでください。</p>
+      <!-- <p>次に、<strong>「質問:不適切」</strong>は質問文だけでは意味が完結していない、もしくは以下の条件を満たさないことを表します．</p>
+      <ol>
+        <li><strong>【質問】が直示表現（「いま」など）を含まないこと (ただし、質問内で意味が完結する場合は除く)</strong></li>
+        <li><strong>趣味や個人的な意見を求める内容ではないこと</strong></li>
+        <li><strong>画像の認識やリンク先の参照を必要としないこと</strong></li>
+        <li><strong>質問が日本語であること</strong></li>
+      </ol> -->
+      <p>「関連している」、「関連していない」、「文章:不適切」は以下の例を参考にしてください。</p>
+      <h3>「関連している」例:</h3>
+        <div class="example-box">
+          <p><strong>質問:</strong></p>
+          <p>曲ってどんな構成で出来ているのですか？メロディとドラムと後なんですか？</p>
+          <p><strong>文章:</strong></p>
+          <p>音楽 音楽行為.<br />音楽行為に関しては、現代では一般的に「作曲」「演奏」「鑑賞」が基本として考えられている。作曲とは、作曲者の心に感じた事を音によって表現することである。演奏とは、再現芸術ともよばれ、作曲された音楽を実際に音として表現する行為であり、原曲を変え（＝編曲）つつ演奏したり、声楽曲を器楽曲に変える（編曲）等した上で演奏する行為も演奏行為とされる。（#演奏）。鑑賞とは、音楽を聴いてそれを味わったり、価値を見極めたりすることである。</p>
+        </div>
+      <h3>「関連していない」例:</h3>
+        <div class="example-box">
+          <p><strong>質問:</strong></p>
+          <p>曲ってどんな構成で出来ているのですか？メロディとドラムと後なんですか？</p>
+          <p><strong>文章:</strong></p>
+          <p>音楽 音楽と健康.<br />音楽のなだめるようなやる気を起こさせる音は、心臓血管の健康へのさまざまな利点を含む、幅広い健康上の利点を提供する。適切な状況で適切な種類の音楽を使用すると、ニーズに応じて、感情的な状態と全体的な健康状態を向上させることができる。</p>
+        </div>
+      <!-- <h3>「質問:不適切」例:</h3>
+        <div class="example-box">
+          <p><strong>質問:</strong></p>
+          <p>この式でr≫dのとき、どのように式変形したか詳しく教えてほしいです</p>
+        </div> -->
+      <h3>「文章:不適切」例:</h3>
+        <div class="example-box">
+          <p><strong>文章:</strong></p>
+          <p>栗田貫一 出演 映画<br>六本木バナナ・ボーイズ（1989年） - 前島 役 <br>ものまね四天王 オリジナルムービー ひょうたん </p>
+        </div>
+    </div>
+    <h2>2. 関連理由の推論記述</h2>
+      <p>1. の作業で「<strong>関連している</strong>」と判断した場合は、<span class="highlight"><strong>質問</strong></span>と<span class="highlight"><strong>文章の関連性を理解するために必要な推論</strong></span>を記述してください。<br />
+         まず、以下の3つのうちどれに当てはまるかを選択してください。
+      </p>
+      <p>
+        <strong>1. 「記述できる」</strong><br>
+        文章の情報と質問を組み合わせることで、答えを導き出すための「推論」が必要かつ可能な場合です。（この場合のみ、下の入力欄に記述してください）
+      </p>
+      <p>
+        <strong>2. 「記述できない（そのまま答えが記述されている）」</strong><br>
+        推論や分析をするまでもなく、文章の中に質問の答えが書かれている場合です。（記述は不要です）
+      </p>
+      <p>
+        <strong>3. 「記述できない（情報は足りない）」</strong><br>
+        トピックは似ていますが、質問の答えを導くための決定的な情報やヒントが欠けている（役立たない）場合です。（記述は不要です）
+      </p>
+      <p>
+        記述を行う場合は（1を選択した場合）、<span style="background-color: #fcff00;"><strong>「質問の意図」+「文章の情報」+「それらがどう結びつくかの推論」の3点を含めて記述してください。</strong></span>また、以下の例を参考にしてください。
+      </p>
+      <h3>「記述ができる」例:</h3>
+        <div class="example-box">
+        <div><strong>質問</strong></div>
+        <div>民法で言う「当事者」とは原告被告だけではありませんか？ 例えば、原告被告の他に、原告の知人も事件に関係していると当事者と言いますか？</div>
+        <div><strong>文章:</strong></div>
+        <div>当事者適格</div>
+        <div>個々の訴訟において、当事者として訴訟を追行し、判決などの名宛人となることができる資格を当事者適格という。</div>
+        <div>一般の民事訴訟で問題となることは少ないが、行政事件訴訟法においては要件が厳格に定められており、裁判例も蓄積されている。</div>
+        <div><strong>記述:</strong></div>
+        <div>この質問は、誰が当事者に当たるかを聞いている。文書は当事者適格の定義と要件を示しており、当事者の範囲を判断するための情報を提供している。</div>
+        </div>
+        <h3>「記述ができない」例:</h3>
+        <div class="example-box">
+        <div><strong>質問</strong></div>
+        <div>民法で言う「当事者」とは原告被告だけではありませんか？ 例えば、原告被告の他に、原告の知人も事件に関係していると当事者と言いますか？</div>
+        <div><strong>文章:</strong></div>
+        <div>当事者 当事者（とうじしゃ、）は、直接ある事柄、事件または法律関係に関係している者をいう。対義語は第三者。</div>
+        <div><strong>記述:</strong></div>
+        </div>
+<p>(この文章は関連はしているものの必要な推論ができない（そのまま質問に対して答えている）ため、記述することができません)</p>
+  <h2><strong><span class="highlight">注意事項</span></strong></h2>
+  <ul>
+      <li>必ず冒頭の説明文を読んでから作業を行ってください。<strong>不適切な作業が続く場合、作業を拒否することがあります。</strong></li>
+      <li>このページ下部に表示されている時間経過バーは、作業時間の目安です。<strong>一時的に作業を中断する場合は、「時間停止」ボタンを押してください。再開する場合は「時間再開」ボタンを押してください。</strong></li>
+      <li>作業を完了したら<span class="highlight"><strong>必ず、lancersに戻り「作業完了」ボタンを押してください。</strong></span>押されない場合、作業が正しく保存されず、報酬が支払われない可能性があります。</li>
+      <li>一部の【質問】と【文章】には、あらかじめ正解が設定されています。<span class="highlight"><strong>これらから著しく外れた判定や記述が続く場合、作業を拒否することがあります。</strong></span></li>
+      <li>生成AIの利用は禁止しませんが、<span class="highlight"><strong>最終的な判断や記述は必ずご自身で行ってください。</strong></span></li>
+  </ul>
+<div id="question-bar">
+  <h2><strong>【質問】</strong><br><span id="topic">{$topic}</span></h2>
+  <!-- <div class="meta">qid: <span id="qid">{$qid}</span></div> -->
+</div>
+<!-- 生データ（サーバが置換） -->
+<div id="did_raw" style="display:none">{$did}</div>
+<div id="psg_raw" style="display:none">{$psg}</div>
+
+<h2>対象となる文章</h2>
+<div id="docs_root"></div>
+
+<script>
+(function(){
+  function parseList(raw){
+    console.log('try seps:', raw);
+    if(raw==null) return [];
+    let t = String(raw).trim();
+    if(!t) return [];
+    if(t.startsWith('[')){
+      try { const arr = JSON.parse(t); if(Array.isArray(arr)) return arr.map(x=>String(x??'').trim()).filter(Boolean); } catch(e){}
+    }
+    const seps=[/\|\|\|/g];
+    
+    for(const s of seps){ const parts=t.split(s).map(x=>x.trim()).filter(Boolean); if(parts.length>1) return parts; }
+    // if(t.includes('\n')){ const parts=t.split(/\n+/).map(x=>x.trim()).filter(Boolean); if(parts.length>1) return parts; }
+    return [t];
+  }
+  function build(){
+    const didArr = parseList(document.getElementById('did_raw').textContent||'');
+    const psgArr = parseList(document.getElementById('psg_raw').textContent||'');
+    const maxLen = Math.max(didArr.length, psgArr.length);
+    const root = document.getElementById('docs_root');
+    console.log('MAX LEN:', maxLen);
+    if(!maxLen){ root.textContent='（文書がありません）'; return; }
+    for(let i=0;i<maxLen;i++){
+      const did = (didArr[i]!==undefined?didArr[i]: (didArr.length===1?didArr[0]:'')) || '';
+      const psg = (psgArr[i]!==undefined?psgArr[i]: (psgArr.length===1?psgArr[0]:'')) || '';
+      if(!did.trim() && !psg.trim()) continue;
+      const idx = i+1;
+      const wrap = document.createElement('div');
+      wrap.className='doc-container doc-item';
+      wrap.setAttribute('data-doc-index', idx);
+      wrap.setAttribute('data-did', did);
+      wrap.innerHTML = `
+        <div class="doc-header">文章 ${idx}</div>
+        <div class="doc-id">DID: ${did?did.replace(/</g,'&lt;'): '(なし)'} </div>
+        <div class="passage-box" id="doc_psg_${idx}">${psg.replace(/</g,'&lt;')}</div>
+        <table><tbody><tr>
+          <td><label><input type="radio" name="data[Result][results][doc${idx}_relevance]" value="related" onchange="toggleReasonSection(${idx});window.__updateCompletion&&window.__updateCompletion();">関連している</label></td>
+          <td><label><input type="radio" name="data[Result][results][doc${idx}_relevance]" value="unrelated" onchange="toggleReasonSection(${idx});window.__updateCompletion&&window.__updateCompletion();">関連していない</label></td>
+          <td><label><input type="radio" name="data[Result][results][doc${idx}_relevance]" value="doc_inappropriate" onchange="toggleReasonSection(${idx});window.__updateCompletion&&window.__updateCompletion();">文章:不適切</label></td>
+        </tr></tbody></table>
+        <div id="reason_section_${idx}" class="reason-section">
+          <p>推論内容を記述できますか？</p>
+          <table><tbody><tr>
+            <td><label><input type="radio" name="data[Result][results][doc${idx}_can_describe]" value="yes" onchange="toggleReasonTextarea(${idx});window.__updateCompletion&&window.__updateCompletion();">記述できる</label></td>
+            <td><label><input type="radio" name="data[Result][results][doc${idx}_can_describe]" value="direct_answering" onchange="toggleReasonTextarea(${idx});window.__updateCompletion&&window.__updateCompletion();">記述できない（そのまま答えが記述されている）</label></td>
+            <td><label><input type="radio" name="data[Result][results][doc${idx}_can_describe]" value="no" onchange="toggleReasonTextarea(${idx});window.__updateCompletion&&window.__updateCompletion();">記述できない（情報は足りない / 役に立たない）</label></td>
+          </tr></tbody></table>
+          <div id="reason_textarea_container_${idx}" class="reason-textarea-container">
+            <p>推論を記述してください:</p>
+            <textarea name="data[Result][results][doc${idx}_reason_text]" rows="4" oninput="window.__updateCompletion&&window.__updateCompletion();"></textarea>
+          </div>
+        </div>
+      `;
+      root.appendChild(wrap);
+    }
+    // After building docs attach completion util
+    setupCompletionObserver();
+  }
+  document.addEventListener('DOMContentLoaded', build);
+
+  // Completion logic exposed globally so server injected script can reuse.
+  window.__pageCompletionStatus = function(){
+    const docs = Array.from(document.querySelectorAll('.doc-item'));
+    const incomplete = [];
+    docs.forEach(doc=>{
+      const idx = doc.getAttribute('data-doc-index');
+      const relName = `data[Result][results][doc${idx}_relevance]`;
+      const relevance = (Array.from(document.getElementsByName(relName)).find(r=>r.checked)||{}).value || '';
+      if(!relevance){ incomplete.push(Number(idx)); return; }
+  if(relevance==='related'){
+        const cdName = `data[Result][results][doc${idx}_can_describe]`;
+        const canDesc = (Array.from(document.getElementsByName(cdName)).find(r=>r.checked)||{}).value || '';
+        if(!canDesc){ incomplete.push(Number(idx)); return; }
+        if(canDesc==='yes'){
+          const ta = document.querySelector(`textarea[name="data[Result][results][doc${idx}_reason_text]"]`);
+          if(!ta || !ta.value.trim()){ incomplete.push(Number(idx)); return; }
+        }
+      }
+    });
+    return { complete: incomplete.length===0, incompleteDocs: incomplete };
+  };
+
+  function highlightIncomplete(status){
+    // Remove existing
+    document.querySelectorAll('.doc-item').forEach(el=>el.classList.remove('incomplete-outline'));
+    status.incompleteDocs.forEach(i=>{
+      const el = document.querySelector(`.doc-item[data-doc-index="${i}"]`);
+      if(el) el.classList.add('incomplete-outline');
+    });
+  }
+  function setupCompletionObserver(){
+    window.__updateCompletion = function(){
+      const st = window.__pageCompletionStatus();
+      highlightIncomplete(st);
+      window.dispatchEvent(new CustomEvent('page-completion-changed', { detail: st }));
+    };
+    // initial
+    window.__updateCompletion();
+  }
+})();
+function toggleReasonSection(idx){
+  const radios = document.getElementsByName(`data[Result][results][doc${idx}_relevance]`);
+  let val='';
+  for(const r of radios){ if(r.checked){ val=r.value; break; } }
+  const sec = document.getElementById(`reason_section_${idx}`);
+  if(!sec) return;
+  if(val==='related' || val==='related_doc') sec.style.display='block'; else { sec.style.display='none'; document.getElementById(`reason_textarea_container_${idx}`).style.display='none'; const cr = document.getElementsByName(`data[Result][results][doc${idx}_can_describe]`); for(const r of cr) r.checked=false; }
+}
+function toggleReasonTextarea(idx){
+  const radios = document.getElementsByName(`data[Result][results][doc${idx}_can_describe]`);
+  let val='';
+  for(const r of radios){ if(r.checked){ val=r.value; break; } }
+  const box = document.getElementById(`reason_textarea_container_${idx}`);
+  if(!box) return;
+  box.style.display = (val==='yes' ? 'block':'none');
+}
+</script>
+</body>
+</html>

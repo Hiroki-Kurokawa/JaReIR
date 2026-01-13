@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>作業開始 | ワーカー情報の入力</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; line-height: 1.6; color:#333; margin: 20px; }
+    h1 { border-bottom: 1px solid #ccc; padding-bottom: 6px; }
+    .container { max-width: 720px; margin: 0 auto; }
+    .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background: #fafafa; }
+    .row { margin-bottom: 12px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    input[type="text"], input[type="number"] { width: 100%; max-width: 600px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .hint { font-size: 12px; color: #666; }
+    .error { background: #ffecec; border: 1px solid #f5aca6; color: #d8000c; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
+    .actions { margin-top: 16px; }
+    button { padding: 8px 16px; border: 1px solid #1e90ff; background: #1e90ff; color: #fff; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #187ad1; }
+    .small { font-size: 12px; color: #555; }
+    .path-tip { background:#f0f8ff; padding:10px; border-left:3px solid #1e90ff; border-radius: 4px; }
+    .inline { display:flex; gap:12px; align-items:center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>作業開始（ワーカー情報の入力）</h1>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <div class="card">
+  
+      {% if task_set_id %}
+        <p>対象タスク: <strong>{{ task_set_id }}</strong></p>
+      {% endif %}
+      <form method="POST">
+          <label for="worker_id">ランサーズのユーザー名 (ニックネーム):</label>
+          <input type="text" id="worker_id" name="worker_id" required>
+          
+          <input type="hidden" name="tasks_per_page" value="{{ defaults.tasks_per_page }}">
+          <input type="hidden" name="post_submit_action" value="{{ defaults.post_submit_action }}">
+          
+          <button type="submit">開始</button>
+      </form>
+    </div>
+
+    <p class="small">このページで入力した情報はセッションに保存され、直後の作業ページで利用されます。</p>
+  </div>
+
+  <script>
+    (function(){
+      const workerInput = document.getElementById('worker_id');
+      const csvInput = document.getElementById('csv_path');
+      const radios = document.querySelectorAll('input[name="post_submit_action"]');
+      function sanitizeWorkerId(rawId) {
+        let id = rawId.trim();                 // 前後の空白除去
+        id = id.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFFー＿\-]/g, "_");
+        if (id.length > 32) id = id.slice(0, 32); // 長すぎる場合は切る
+        return id;
+      }
+      try {
+        const saved = JSON.parse(localStorage.getItem('worker_form') || '{}');
+        if (saved.worker_id && workerInput) workerInput.value = saved.worker_id;
+        if (saved.csv_path && csvInput && !csvInput.value) csvInput.value = saved.csv_path;
+        if (saved.post_submit_action && radios && radios.length) {
+          for (const r of radios) if (r.value === saved.post_submit_action) r.checked = true;
+        }
+      } catch (e) {}
+      const form = document.querySelector('form');
+      if (form) {
+        form.addEventListener('submit', function(){
+          if (workerInput) {
+            workerInput.value = sanitizeWorkerId(workerInput.value);
+          }
+          let psa = 'next';
+            for (const r of radios) { if (r.checked) psa = r.value; }
+            const data = {
+              worker_id: workerInput ? workerInput.value : '',
+              csv_path: csvInput ? csvInput.value : '',
+              post_submit_action: psa
+            };
+            localStorage.setItem('worker_form', JSON.stringify(data));
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
