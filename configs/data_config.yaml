@@ -1,12 +1,12 @@
 paths:
-  yahoo_query_path: /mnt/LSTA6/bay1/kurokawa/yahoo_df/all_query_df.csv
-  yahoo_answer_path: /mnt/LSTA6/bay1/kurokawa/yahoo_df/all_answer_df.csv
+  yahoo_query_path: yahoo_df/all_query_df.csv
+  yahoo_answer_path: yahoo_df/all_answer_df.csv
   yahoo_json_query_dir: data/yahoo_json_query
-  wikipedia_dump_path: /mnt/LSTA6/bay1/kurokawa/wikipedia_data/jawiki-20250801-pages-articles.xml
-  wikipedia_psg_path: /mnt/LSTA6/bay1/kurokawa/wikipedia_data/wiki_psg_json/
-  wikipedia_index_dir: /mnt/LSTA6/bay1/kurokawa/wikipedia_data/wiki_index/
-  wikipedia_psg_cache_path: /mnt/LSTA6/bay7/kurokawa/wiki_all_passages.pkl
-  annotation_pos_neg_json : /mnt/LSTA6/bay1/kurokawa/pos_neg_list/json_data/
+  wikipedia_dump_path: wikipedia_data/jawiki-20250801-pages-articles.xml
+  wikipedia_psg_path: wikipedia_data/wiki_psg_json/
+  wikipedia_index_dir: wikipedia_data/wiki_index/
+  wikipedia_psg_cache_path: wikipedia_data/wiki_all_passages.pkl
+  annotation_pos_neg_json : data/pos_neg_list/json_data/
   first_annotation_csv_paths : data/wiki_psg_tasks/
   final_annotation_csv_path : data/final_annotation_data/
 

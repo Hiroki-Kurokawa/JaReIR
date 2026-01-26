@@ -193,9 +193,9 @@ def main():
             gc.collect()
         
     all_results.update(tmp_results)
-    with open(os.path.join(CFG["retrieval_config"]["paths"]["retrieval_results_save_path"], "all_retrieval_results_260121.pkl"), "wb") as f:
+    with open(os.path.join(CFG["retrieval_config"]["paths"]["retrieval_results_save_path"], "all_retrieval_results.pkl"), "wb") as f:
         pickle.dump(all_results, f)
-    with open(os.path.join(CFG["retrieval_config"]["paths"]["retrieval_results_save_path"], "all_retrieval_results_260121.pkl"), "rb") as f:
+    with open(os.path.join(CFG["retrieval_config"]["paths"]["retrieval_results_save_path"], "all_retrieval_results.pkl"), "rb") as f:
         all_results = pickle.load(f)
 
     query_type_results = {}
@@ -247,7 +247,7 @@ def main():
         print(results.to_dataframe())
         query_type_results[query_type] = results
     for query_type, results in query_type_results.items():
-        results.to_dataframe().to_csv(os.path.join(CFG["retrieval_config"]["paths"]["eval_results_save_path"], f"retrieval_results_{query_type}_20260120.csv"))
+        results.to_dataframe().to_csv(os.path.join(CFG["retrieval_config"]["paths"]["eval_results_save_path"], f"retrieval_results_{query_type}.csv"))
 
 
 if __name__ == "__main__":

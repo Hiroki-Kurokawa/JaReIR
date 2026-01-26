@@ -28,6 +28,12 @@ the Yahoo! Chiebukuro data is not included in this repository. Please refer to t
     - ⚠️ Warning: Yahoo! Chiebukuro data was terminated in 2025/12. Please check the usage policy before using it.
   - 0.2 Wikipedia dump data: https://dumps.wikimedia.org/jawiki/
     - We use the dump data as of 2025/08/01.
+  - 0.3 Set the URL for annotation server.
+    - You need to set the URL for the annotation server in `src/annotation/lancers/lancers.html` and `.env` file.
+    - `.env` file example:
+      ```
+      ANNOTATION_BASE_URL=https://your_annotation_server_url
+      ```
 1. Preprocess Yahoo! Chiebukuro data using the code in `src/preprocessing/yahoo_process`.
   - Preprocessing steps include extracting question-answer pairs, filtering based on URL patterns, and removing image-based questions.
   - `analyze_yahoo.py` : Analyze the Yahoo! Chiebukuro dataset to understand its characteristics.
