@@ -118,10 +118,10 @@ def extract_section_hierarchy(wikitext):
                          flags=re.IGNORECASE | re.DOTALL)
     wikitext = pattern.sub(r'\1></ref>', wikitext)
     pattern = re.compile(
-            r'<!--.*?-->'              # コメント
-            r'|<ref\b[^>]*?\s*/>'      # 自己終了タグ
-            r'|<ref\b[^>]*?>.*?</\s*ref\s*>'  # 開始+終了タグ
-            r'|<ref\b[^>]*?>',         # 壊れた開タグ
+            r'<!--.*?-->'              # Comments
+            r'|<ref\b[^>]*?\s*/>'      # Self-closing tags
+            r'|<ref\b[^>]*?>.*?</\s*ref\s*>'  # Opening + closing tags
+            r'|<ref\b[^>]*?>',         # Broken opening tags
             flags=re.DOTALL | re.IGNORECASE
         )
     wikitext = pattern.sub('', wikitext)
@@ -135,7 +135,6 @@ def extract_section_hierarchy(wikitext):
         duplicate_count = defaultdict(int)
         for head in heading:
             if head.count("=") > 2 and head.count("==") == 0:
-                # =を含む文
                 continue
             if pre_parent_num == -1:
                 pre_parent_num = head.count("=") // 2
@@ -180,7 +179,6 @@ def extract_section_hierarchy(wikitext):
         #print(part_tree)
         wikitext_split = wikitext.split("\n")
         
-        # 導入部（最初の見出し前のテキスト）を抽出
         intro_text = []
         ignore_pattern = re.compile(r"thumb|ファイル:|File:|^Category:|^カテゴリ:", flags=re.IGNORECASE)
         intro_done = False
@@ -200,16 +198,16 @@ def extract_section_hierarchy(wikitext):
             if current_text.startswith("=") and current_text.endswith("="):
                 tmp_title = current_text.replace("=", "").strip()
                 tmp_title = re.sub(r'\[\[.*?\|(.*?)\]\]', r'\1', tmp_title)
-                # 保存を先に行う
+                # Save before proceeding
                 if current_title is not None:
                     part_text[current_title] = "\n".join(tmp_text)
                     tmp_text = []
-                # 重複チェック（seen_titlesを使用）
+                # Duplicate check using seen_titles
                 if tmp_title in seen_titles:
                     duplicate_count[tmp_title] += 1
                     tmp_title = tmp_title + "_dup" + str(duplicate_count[tmp_title])
                 seen_titles.add(tmp_title)
-                intro_done = True  # 最初の見出しに到達
+                intro_done = True  # Reached the first heading
                 
                 current_title = tmp_title
             else:
@@ -221,7 +219,7 @@ def extract_section_hierarchy(wikitext):
                 if current_title is not None:
                     tmp_text.append(current_text)
                 elif not intro_done:
-                    # まだ見出しに到達していない → イントロ部分
+                    # Not yet reached the first heading → Intro section
                     intro_text.append(current_text)
             current_text = None
         if len(tmp_text) >= 0 and current_title is not None:
@@ -232,11 +230,11 @@ def extract_section_hierarchy(wikitext):
             parent = value["parent"]
             if parent is None:
                 recursive_text_extract(part_tree, part_text, key, [], texts, [key])
-        # イントロテキストを結合して返す
+        # Combine intro text and return
         intro_joined = "\n".join(intro_text) if intro_text else None
         return (intro_joined, texts)
         
-    # 見出しがない場合でもイントロを抽出
+    # Extract intro even if there are no headings
     wikitext_split = wikitext.split("\n")
     intro_text = []
     ignore_pattern = re.compile(r"thumb|ファイル:|File:|^Category:|^カテゴリ:", flags=re.IGNORECASE)
@@ -266,7 +264,7 @@ def tasks(args):
     section_blacklist = ["脚注", "参考文献", "外部リンク", "関連項目", "注釈"]
     idx = 0
     
-    # イントロ（導入部）を追加
+    # Add intro (introduction) section
     if intro_text:
         saved_intro = clean_wikitext(intro_text)
         saved_intro = str(mwparserfromhell.parse(saved_intro).strip_code())
@@ -276,16 +274,16 @@ def tasks(args):
             save_data = {
                 "id": f"{page_id}_{idx}",
                 "title": title,
-                "section_titles": [title],  # Wikipediaタイトルのみ
+                "section_titles": [title],
                 "text": saved_intro
             }
             res.append(save_data)
             idx += 1
     
-    # セクションを追加
+    # Add sections
     if texts is not None:
         for data in texts:
-            # ブラックリストチェック（section_titlesにWikipediaタイトルは含めない）
+            # Blacklist check (Wikipedia title is not included in section_titles)
             if any(blk in sec_title for sec_title in data["title"] for blk in section_blacklist):
                 continue
             saved_text = "\n".join(data["text"])
@@ -299,7 +297,7 @@ def tasks(args):
             save_data = {
                 "id": f"{page_id}_{idx}",
                 "title": title,
-                "section_titles": [title] + data["title"],  # Wikipediaタイトル + セクション見出し
+                "section_titles": [title] + data["title"],  # Wikipedia title + section headings
                 "text": saved_text
             }
             res.append(save_data)
@@ -331,6 +329,7 @@ def main():
             continue
         if any([blk in title for blk in black_title_list]):
             continue
+        # Manual fixes for known issues
         if title == "柔道整復師":
             text = text.replace("柔道整復師の扱う対象ではないとしている<ref", "")
         elif title == "ギャグ":

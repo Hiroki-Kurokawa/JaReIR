@@ -51,6 +51,8 @@ def pyserini_load_text(jsonl_path):
             data = json.loads(line)
             psg_id = data["id"]
             psg = data["title"] + "\n" + data["text"].strip()
+            if len(psg) > 1094 or len(psg) < 29:
+                continue
             save_pyserini_data.append({"id": psg_id, "contents": psg})
     return save_pyserini_data
 
@@ -94,6 +96,8 @@ def build_faiss_index(jsonl_paths):
                 data = json.loads(line)
                 psg_id = data["id"]
                 text = f"{data['title']}\n{data['text']}"
+                if len(text) > 1094 or len(text) < 29:
+                    continue
                 batch_texts.append(text)
                 faiss_id_converter[str(count)] = psg_id
                 count += 1

@@ -22,10 +22,9 @@ from typing import Any, Dict, List, Optional
 import re
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-fixed-secret-key-change-this-in-production')
 secret = os.environ.get("FLASK_SECRET_KEY")
 if not secret:
-    raise RuntimeError("FLASK_SECRET_KEY is required in production")
+    secret = "dev-secret" # In production, set FLASK_SECRET_KEY environment variable
 app.secret_key = secret
 
 BASE_DIR = os.path.dirname(__file__)
@@ -33,6 +32,7 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 OUTPUT_DIR = os.path.join(DATA_DIR, 'outputs')
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 INDEX_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, 'index.html')
+BASE_URL = os.environ.get("ANNOTATION_BASE_URL", "http://localhost:5001")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -113,11 +113,10 @@ def worker_default():
 @app.route('/worker/<task_set_id>', methods=['GET', 'POST'])
 def worker(task_set_id):
     
-    # URL の <task_set_id> から CSV 名とパスを構築
+    # Construct CSV path from <task_set_id> in URL
     csv_name = f"{task_set_id}.csv"
     csv_path = os.path.join(DATA_DIR, "wiki_psg_tasks", csv_name)
 
-    # ページ表示用のデフォルト値
     defaults = {
         'tasks_per_page': 3,
         'post_submit_action': 'next',
@@ -136,9 +135,8 @@ def worker(task_set_id):
             return render_template('worker.html', 
                                  error='ユーザー名 を入力してください', 
                                  defaults=defaults, 
-                                 task_set_name=csv_name) # ページ表示用に CSV 名を渡す
+                                 task_set_name=csv_name)
 
-        # csv_path の入力チェックの代わりに、構築したパスの存在チェック
         if not os.path.exists(csv_path):
             return render_template('worker.html', 
                                  error=f'タスクファイル {csv_name} が見つかりません。', 
@@ -164,7 +162,6 @@ def worker(task_set_id):
         session['csv_path'] = csv_path  # 構築した CSV パスをセッションに保存
         session['post_submit_action'] = post_submit_action
         session['page_index'] = 0
-        session['tasks_per_page'] = tasks_per_page
         session['started_at_iso'] = datetime.now(timezone.utc).isoformat()
         
         session['task_set_id'] = task_set_id
@@ -172,9 +169,6 @@ def worker(task_set_id):
         return redirect(url_for('consent', task_set_id=task_set_id, _external=True))
 
 
-
-    # GET
-    # worker_id 入力フォームと、処理対象のタスク名を表示
     return render_template('worker.html', 
                          error=None, 
                          defaults=defaults, 
@@ -242,7 +236,6 @@ def task_page():
 
     assert len(set([t['topic'] for t in tasks])) == 1, "All topics must be the same for index2.html"
     if '{$topic}' in html or '{$psg}' in html or '{$did}' in html or '{$qid}' in html:
-        #first = page_tasks[0] if page_tasks else {'topic': '', 'psg': '', 'did': '', 'qid': ''}
         topics = tasks[0]["topic"]
         psgs = "|||".join([t["psg"] for t in tasks])
         dids = "|||".join([t["did"] for t in tasks])
@@ -251,7 +244,7 @@ def task_page():
         html = html.replace('{$psg}', escape(psgs))
         html = html.replace('{$did}', dids)
 
-    submit_url = "https://www.lsta.media.kyoto-u.ac.jp/demo/reasonIR/submit"
+    submit_url = f"{BASE_URL}/submit"
     print("Submit URL:", submit_url)
     submit_url_json = json.dumps(submit_url)
 
@@ -520,22 +513,15 @@ def submit_results():
     }
     atomic_write_json(json_path, doc)
 
-    #total_pages = (len(csv_tasks) + per_page - 1) // per_page if per_page > 0 else 0
     total_pages = 1  
     next_url = None
     if total_pages <= 0:
-        # タスクが存在しない場合は登録画面へ
         next_url = url_for('worker', _external=True)
     elif page >= total_pages:
-        ## 最終ページを終えたら登録画面へ
-        next_url = "https://www.lsta.media.kyoto-u.ac.jp/demo/reasonIR/complete"
-        #next_url = url_for('worker')
-    # elif post_action == 'next':
-    #     next_url = url_for('task_page', page=page + 1)
+        next_url = f"{BASE_URL}/complete"
     else:
         next_url = url_for('worker_default', _external=True)
 
-    # すべてのページのタスクが終了したかどうか
     completed_all = (total_pages <= 0) or (page >= total_pages)
 
     return jsonify({'status': 'ok', 'next_url': next_url, 'completed_all': completed_all})

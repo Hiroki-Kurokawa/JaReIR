@@ -13,9 +13,6 @@ for task_path in task_paths:
     df = pd.read_csv(task_path)
     qid = str(df.iloc[0, 0])
     qid_to_path[qid] = task_path
-drop_qids = [10276959415, 14268690204, 14261451199, 13262483648, 
-                 10255032020, 14265231749, 10246015400, 13236803063, 
-                 14246100829, 14250443469, 13242957128, 13225955083, 12272333827]
 for path in result_paths:
     with open(path, "r") as f:
         results = json.load(f)
@@ -31,9 +28,7 @@ for path in result_paths:
                     result["qid"] = qid
                     break
         assert len(result["qid"]) > 0, f"QID not found in result: {result}, file: {path}"
-        if int(result["qid"]) in drop_qids:
-            print("Dropping result with QID:", result["qid"])
-            continue
+
         result_dict["worker_id"].append(results["worker_id"])
         result_dict["qid"].append(result["qid"])
         result_dict["did"].append(result["did"])

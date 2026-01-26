@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Analyze Wikipedia passages dataset.
+"""
+
+
 import json
 import glob
 import os
@@ -28,9 +36,9 @@ def worker_for_load_jsonl(jsonl_path):
             text = text.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
             all_text = title + "\n" + text
             text_length = len(all_text)
-            if text_length > 1094: # ../passage_split/src/stats.py の95パーセンタイルに基づく
+            if text_length > 1094: # 95 percentile
                 stats["long"] += 1
-            elif text_length < 29: # ../passage_split/src/stats.py の5パーセンタイルに基づく
+            elif text_length < 29: # 5 percentile
                 stats["short"] += 1
             else:
                 if not isinstance(text, str) or not isinstance(title, str):

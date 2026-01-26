@@ -1,8 +1,19 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Create qrel and query files from annotation results.
+"""
+
+
+
 import pandas as pd
 import os
 import glob
 import json
 from collections import defaultdict
+from src.utils.configs import load_configs
+CFG = load_configs()
 INPUT_PATH = "analyzer/data/annotation_result.csv"
 SAVE_DIR = "analyzer/data/j-bright"
 os.makedirs(SAVE_DIR, exist_ok=True)
@@ -14,7 +25,7 @@ query_path = os.path.join(SAVE_DIR, "query.json")
 df = pd.read_csv(INPUT_PATH)
 print(df)
 qid_to_query = {}
-query_body_paths = glob.glob("/mnt/LSTA6/bay1/kurokawa/neg_pos_list/json_data_1212/*.json")
+query_body_paths = glob.glob(os.path.join(CFG["data_config"]["paths"]["annotation_pos_neg_json"], "*.json"))
 for path in query_body_paths:
     with open(path, "r") as f:
         data = json.load(f)

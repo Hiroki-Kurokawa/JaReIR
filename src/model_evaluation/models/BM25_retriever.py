@@ -1,25 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import janome.tokenizer
+"""
+BM25 retriever using Pyserini for Japanese text.
+"""
+
 import os
 import logging
 import subprocess
 import json
 from pyserini.search.lucene import LuceneSearcher
-from multiprocessing import Pool, cpu_count
+from multiprocessing import cpu_count
 
 class BM25Retriever:
 
     def __init__(self, corpus, index_dir, force = False):
         self.ix = None
         self.index_dir = index_dir
-        self.tokenizer = janome.tokenizer.Tokenizer()
         self.build_index(corpus, index_dir=index_dir, force=force)
 
     def build_index(self, corpus, index_dir, force = False):
         """
-        BM25のインデックスを構築する
+        Construct BM25 index using Pyserini
         """
         pyserini_input_dir = os.path.join(index_dir, "pyserini_jsonl")
         os.makedirs(pyserini_input_dir, exist_ok=True)

@@ -117,9 +117,6 @@ def main():
                     continue
                 if (neg_doc_infos[1], data["query_id"]) in example_pairs:
                     continue
-                # judge = judge_text(data["query"], passages[neg_doc_infos[1]]["psg"])
-                # if not judge:
-                #     continue
                 neg_doc_id = neg_doc_infos[1]
                 neg_doc_item = passages[neg_doc_id]["psg"]
                 neg_doc_item = re.sub(r'\{\|.*?\|\}', '', neg_doc_item, flags=re.DOTALL)

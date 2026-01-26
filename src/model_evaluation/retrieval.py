@@ -1,42 +1,37 @@
 
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Model evaluation for retrieval models.
+"""
+
 import os
-os.environ["IR_DATASETS_HOME"] = "/mnt/LSTA6/bay1/kurokawa/ir_datasets_cache"
-os.environ["HF_HOME"] = "/mnt/LSTA6/bay7/kurokawa/.cache"
-os.environ["TRANSFORMERS_CACHE"] = "/mnt/LSTA6/bay7/kurokawa/.cache"
-os.environ["XDG_CACHE_HOME"] = "/mnt/LSTA6/bay7/kurokawa/.cache"
-os.environ["HF_HUB_CACHE"] = "/mnt/LSTA6/bay7/kurokawa/.cache"
-os.environ["HF_DATASETS_CACHE"] = "/mnt/LSTA6/bay7/kurokawa/.cache"
-os.environ["VLLM_ASSETS_CACHE"] = "/mnt/LSTA6/bay7/kurokawa/.vllm_cache/"
-os.environ["FLASHINFER_WORKSPACE_BASE"] = "/mnt/LSTA6/bay7/kurokawa/flashinfer_cache/"
-os.environ["FLASHINFER_CUBIN_DIR"] = "/mnt/LSTA6/bay7/kurokawa/flashinfer_cache/cubin/"
-os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 import json
 import orjson
 import re
 import mwparserfromhell
 from tqdm import tqdm
 import glob
-from models.diver_retriever import SemanticRetriever
+from models.dense_retriever import SemanticRetriever
 from models.BM25_retriever import BM25Retriever
 from models.query_expand import QueryExpand
-from models.colbert_retriever import ColBERTRetriever
-from models.reranker import LLMBaseReranker, NeuralReranker
+from models.reranker import LLMBaseReranker, CEReranker
 from ranx import compare, Qrels, Run, fuse
 from multiprocessing import Pool, cpu_count 
 import torch
 import gc
 import pickle
-
+from dotenv import load_dotenv
+from src.utils.configs import load_configs
+CFG = load_configs()
+load_dotenv()
 compare_model_name_list = {
     "bm25" : BM25Retriever,
-    #"tohoku-nlp/bert-base-japanese-v3" : SemanticRetriever,
+    "tohoku-nlp/bert-base-japanese-v3" : SemanticRetriever,
     "AQ-MedAI/Diver-Retriever-0.6B" : SemanticRetriever,
-    # "sbintuitions/sarashina-embedding-v2-1b" : SemanticRetriever,
-    #"answerdotai/JaColBERTv2.5" : ColBERTRetriever,
-    # "cl-nagoya/ruri-v3-130m" : SemanticRetriever,
-    #"Qwen/Qwen3-Embedding-4B" : SemanticRetriever,
-    #"llm-jp/llm-jp-3.1-13b-instruct4" : SemanticRetriever
+    "sbintuitions/sarashina-embedding-v2-1b" : SemanticRetriever,
 }
 
 def get_query(all_query_dir):
@@ -57,6 +52,8 @@ def get_query(all_query_dir):
                 del queries[qid]
             if qid in qrels:
                 del qrels[qid]
+    for qid, values in qrels.items():
+        qrels[qid] = {str(psg_id): score for psg_id, score in values.items()}
    
     print(f"Loaded {len(queries)} queries and {len(qrels)} qrels from {all_query_dir}")
     return queries, qrels, excluded_dids, query_difficulty
@@ -71,54 +68,6 @@ def load_worker(jsonl_path):
             passages[psg_id] = psg
     return passages
 
-def create_model(data_dir, all_passages):
-    # jsonl_paths = glob.glob(os.path.join(data_dir, "*.jsonl"))
-    # all_passages = []
-    # with Pool(cpu_count()) as p:i961
-    
-    #     for passage_dict in tqdm(p.imap_unordered(load_worker, jsonl_paths, chunksize=10), total=len(jsonl_paths)):
-    #         all_passages.append(passage_dict)
-    # all_passages = {k: v for d in all_passages for k, v in d.items()}
-    # with open("/mnt/LSTA6/bay7/kurokawa/wiki_all_passages.pkl", "wb") as f:
-    #     pickle.dump(all_passages, f)
-    
-    # new_all_passages = {}
-    # for did in need_passages:
-    #     new_all_passages[did] = all_passages[did]
-    # all_passages = new_all_passages
-    # print(f"Filtered to {len(all_passages)} passages needed for qrels.")
-
-    # semantic_retriever = SemanticRetriever(
-    #     model_path_or_name="AQ-MedAI/Diver-Retriever-4B",
-    #     corpus=all_passages,
-    #     index_dir = "/mnt/LSTA6/bay1/kurokawa/faiss_index/",
-    #     force=False
-    # )
-    # bm25_retriever = BM25Retriever(
-    #     corpus = all_passages,
-    #     index_dir = "/mnt/LSTA6/bay1/kurokawa/bm25_index/",
-    #     force=False
-    # )
-    # models = {}
-    # for model_name, model_class in compare_model_name_list.items():
-    #     print(f"Creating model: {model_name}")
-    #     if model_class == SemanticRetriever:
-    #         model_instance = model_class(
-    #             model_path_or_name=model_name,
-    #             corpus=all_passages,
-    #             index_dir=f"/mnt/LSTA6/bay1/kurokawa/faiss_index_{model_name.replace('/', '_')}/",
-    #             force=True
-    #         )
-    #     else:  # BM25Retriever
-    #         model_instance = model_class(
-    #             corpus=all_passages,
-    #             index_dir="/mnt/LSTA6/bay1/kurokawa/bm25_index/",
-    #             force=True
-    #         )
-    #     models[model_name] = model_instance
-
-    return None, all_passages
-
 def retreive(all_passages, queries):
     all_results = {}
     for model_name, model_class in compare_model_name_list.items():
@@ -128,34 +77,27 @@ def retreive(all_passages, queries):
             model_instance = model_class(
                 model_path_or_name=model_name,
                 corpus=all_passages,
-                index_dir=f"/mnt/LSTA6/bay1/kurokawa/faiss_index_{model_name.replace('/', '_')}/",
+                index_dir= os.path.join(CFG["model_config"]["paths"]["INDEX_BASE_DIR"], f"faiss_index_{model_name.replace('/', '_')}"),
                 force=False
-            )
-        elif model_class == ColBERTRetriever:
-            model_instance = model_class(
-                model_path_or_name=model_name,
-                corpus=all_passages,
-                index_dir=f"/mnt/LSTA6/bay1/kurokawa/colbert_index_{model_name.replace('/', '_')}/",
-                force=True
             )
         else:  # BM25Retriever
             model_instance = model_class(
                 corpus=all_passages,
-                index_dir="/mnt/LSTA6/bay1/kurokawa/bm25_index/",
+                index_dir= os.path.join(CFG["model_config"]["paths"]["INDEX_BASE_DIR"], "bm25_index/"),
                 force=False
             )
         print(f"Evaluating model: {model_name}")
-        ranking_results = model_instance.retrieve(queries, top_k=1000)
+        ranking_results = model_instance.retrieve(queries, top_k=10000)
         all_results[model_name] = ranking_results
 
         del model_instance
         torch.cuda.empty_cache()
         gc.collect()
+
     return all_results
 
 def worker_for_load_jsonl(jsonl_path):
     passages = {}
-    stats = {"total": 0, "short": 0, "long": 0, "total_length": 0}
     with open(jsonl_path, "r") as f:
         for line in tqdm(f):
             data = json.loads(line)
@@ -166,113 +108,95 @@ def worker_for_load_jsonl(jsonl_path):
         
             text = mwparserfromhell.parse(text).strip_code()
             text = re.sub(r'[\ud800-\udfff]', '', text)
-            text = text.replace("\x00", "")  # remove null characters
+            text = text.replace("\x00", "")
             text = text.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
             all_text = title + "\n" + text
             text_length = len(all_text)
-            if text_length > 1094: # ../passage_split/src/stats.py の95パーセンタイルに基づく
-                stats["long"] += 1
-            elif text_length < 29: # ../passage_split/src/stats.py の5パーセンタイルに基づく
-                stats["short"] += 1
+            if text_length > 1094 or  text_length < 29:
+                continue
             else:
                 if not isinstance(text, str) or not isinstance(title, str):
                     print(title, type(title))
                     print(text, type(text))
                     raise ValueError("Invalid text or title")
-                passages[psg_id] = all_text
-            stats["total"] += 1
-            stats["total_length"] += text_length
-    print(stats)
-    return passages, stats
+                passages[str(psg_id)] = all_text
+
+    return passages
 
 def load_passages(data_dir):
     jsonl_paths = glob.glob(os.path.join(data_dir, "*.jsonl"))
     passages = {}
-    stats = {"total": 0, "short": 0, "long": 0, "total_length": 0}
     with Pool(min(cpu_count(), len(jsonl_paths))) as pool:
-        for passage_dict, stat in tqdm(pool.imap_unordered(worker_for_load_jsonl, jsonl_paths)):
+        for passage_dict  in tqdm(pool.imap_unordered(worker_for_load_jsonl, jsonl_paths)):
             passages.update(passage_dict)
-            for key in stats:
-                stats[key] += stat[key]
-
     print(f"Loaded {len(passages)} passages from {data_dir}")
-    print("Passage stats:", stats)
     return passages
 
 def main():
     
     queries, qrels, excluded_dids, query_difficulty = get_query("data/j-bright_v1")
-    #documents = load_documents("/mnt/LSTA6/bay1/kurokawa/wiki_docs/")
-    # all_passages = load_passages("/mnt/LSTA6/bay1/kurokawa/wikipedia_data/wiki_psg_json")
-    # with open("/mnt/LSTA6/bay7/kurokawa/wiki_all_passages.pkl", "wb") as f:
-    #     pickle.dump(all_passages, f)
-    with open("/mnt/LSTA6/bay7/kurokawa/wiki_all_passages.pkl", "rb") as f:
+    all_passages = load_passages(CFG["data_config"]["paths"]["wikipedia_psg_path"])
+    with open(CFG["data_config"]["paths"]["wikipedia_psg_cache_path"], "wb") as f:
+        pickle.dump(all_passages, f)
+    with open(CFG["data_config"]["paths"]["wikipedia_psg_cache_path"], "rb") as f:
         all_passages = pickle.load(f)
     print("all passages loaded.", len(all_passages))
-    for key, value in all_passages.items():
-        print(key, value)
-        break
-    # new_all_passages = {}
-    # for did in need_passages:
-    #     new_all_passages[did] = all_passages[did]
-    # all_passages = new_all_passages
+
+    # Remove excluded passages
     for did in excluded_dids:
         if did in all_passages:
             del all_passages[did]
 
     print(f"Loaded {len(all_passages)}")
-    # query_expander = QueryExpand(
-    #     model_path_or_name="Qwen/Qwen3-30B-A3B-Instruct-2507",
-    #     corpus=all_passages,
-    #     index_dir = "/mnt/LSTA6/bay7/kurokawa/bm25_index/"
-    # )
-    # expanded_queries = {}
-    # for qid, query in tqdm(queries.items()):
-    #     expanded_query = query_expander.expand(query, round_nums=5)
-    #     expanded_queries[qid] = expanded_query
-    # torch.cuda.empty_cache()
-    # gc.collect()
-    # del query_expander
-    # with open("expanded_queries.pkl", "wb") as file:
-    #     pickle.dump(expanded_queries, file)
+    query_expander = QueryExpand(
+        model_path_or_name="Qwen/Qwen3-30B-A3B-Instruct-2507",
+        corpus=all_passages,
+        index_dir = os.path.join(CFG["model_config"]["paths"]["INDEX_BASE_DIR"], "bm25_index")
+    )
+    expanded_queries = {}
+    for qid, query in tqdm(queries.items()):
+        expanded_query = query_expander.expand(query, round_nums=5)
+        expanded_queries[qid] = expanded_query
+
+    torch.cuda.empty_cache()
+    gc.collect()
+    del query_expander
+    with open("expanded_queries.pkl", "wb") as file:
+        pickle.dump(expanded_queries, file)
     with open("expanded_queries.pkl", "rb") as file:
         expanded_queries = pickle.load(file)
-    #tmp, all_passages = create_model("/mnt/LSTA6/bay1/kurokawa/wikipedia_data/wiki_psg_vec/", all_passages)
+
     all_results = retreive(all_passages, queries)
-    # expanded_results = retreive(all_passages, expanded_queries)
-    # expanded_results = {k + "_QE": v for k, v in expanded_results.items()}
-    # all_results.update(expanded_results)
-    # reranker_method_and_model_name = [
-    #     # {"model_path_or_name": "google/gemma-3-12b-it", "method": "prp_allpair"},
-    #     # {"model_path_or_name": "google/gemma-3-12b-it", "method": "prp_sorting"},
-    #     {"model_path_or_name": "google/gemma-3-12b-it", "method": "prp_sliding_k"},
-    #     # {"model_path_or_name": "castorini/monot5-base-msmarco", "method": "pointwise"},
-    #     {"model_path_or_name": "google/gemma-3-12b-it", "method": "listwise"},
-    #     {"model_path_or_name": "hotchpotch/japanese-reranker-base-v2", "method": "neural"},
-    # ]
-    # tmp_results = {}
-    # for model_name, results in all_results.items():
-    #     if "bm25" in model_name:
-    #         continue
-    #     if "QE" not in model_name:
-    #         continue
-    #     for item in reranker_method_and_model_name:
-    #         if item["method"] == "neural":
-    #             reranker_instance = NeuralReranker(model_path_or_name=item["model_path_or_name"], corpus=all_passages, query_dict=queries)
-    #         else:
-    #             reranker_instance = LLMBaseReranker(model_path_or_name=item["model_path_or_name"], corpus=all_passages, query_dict=queries, method=item["method"])
-    #         reranked_result = reranker_instance.reranking(results, context=None, top_k=20)
-    #         reranker_name = item["method"]
-    #         tmp_results[f"{model_name}_Reranker_no_Context_{reranker_name}"] = reranked_result
-    #         del reranker_instance
-    #         torch.cuda.empty_cache()
-    #         gc.collect()
+    expanded_results = retreive(all_passages, expanded_queries)
+    expanded_results = {k + "_QE": v for k, v in expanded_results.items()}
+    all_results.update(expanded_results)
+    reranker_method_and_model_name = [
+        {"model_path_or_name": "google/gemma-3-12b-it", "method": "prp_sliding_k"},
+        {"model_path_or_name": "hotchpotch/japanese-reranker-base-v2", "method": "neural"},
+    ]
+    tmp_results = {}
+    for model_name, results in all_results.items():
+        if "bm25" in model_name:
+            continue
+        if "QE" not in model_name: # Rerank only for QE models
+            continue
+        for item in reranker_method_and_model_name:
+            if item["method"] == "neural":
+                reranker_instance = CEReranker(model_path_or_name=item["model_path_or_name"], corpus=all_passages, query_dict=queries)
+            else:
+                reranker_instance = LLMBaseReranker(model_path_or_name=item["model_path_or_name"], corpus=all_passages, query_dict=queries)
+            reranked_result = reranker_instance.reranking(results, context=None, top_k=20)
+            reranker_name = item["method"]
+            tmp_results[f"{model_name}_Reranker_{reranker_name}"] = reranked_result
+            del reranker_instance
+            torch.cuda.empty_cache()
+            gc.collect()
         
-    # all_results.update(tmp_results)
-    # with open("all_retrieval_results_260121.pkl", "wb") as f:
-    #     pickle.dump(all_results, f)
-    # with open("all_retrieval_results_260121.pkl", "rb") as f:
-    #     all_results = pickle.load(f)
+    all_results.update(tmp_results)
+    with open(os.path.join(CFG["retrieval_config"]["paths"]["retrieval_results_save_path"], "all_retrieval_results_260121.pkl"), "wb") as f:
+        pickle.dump(all_results, f)
+    with open(os.path.join(CFG["retrieval_config"]["paths"]["retrieval_results_save_path"], "all_retrieval_results_260121.pkl"), "rb") as f:
+        all_results = pickle.load(f)
 
     query_type_results = {}
     for query_type in ["all", "easy_query", "hard_query"]:
@@ -318,13 +242,12 @@ def main():
         print("N bm25 run:", len(partial_results["bm25"]))
         print("missing qids:", len(set(filtered_qrels) - set(partial_results["bm25"])))
         qrels_ranx = Qrels(filtered_qrels)
-        results = compare(qrels_ranx, runs, metrics=["ndcg@1", "ndcg@3", "ndcg@5", "ndcg@10", "ndcg@20", "ndcg@100", "map", "recall@20", "recall@1000", "mrr@10"])
+        results = compare(qrels_ranx, runs, metrics=["ndcg@10", "mrr@10", "hits@10", "hit_rate@10", "recall@1000"])
         print(f"Results for query type: {query_type}")
         print(results.to_dataframe())
         query_type_results[query_type] = results
     for query_type, results in query_type_results.items():
-        results.to_dataframe().to_csv(f"retrieval_results_{query_type}_20260120.csv")
-
+        results.to_dataframe().to_csv(os.path.join(CFG["retrieval_config"]["paths"]["eval_results_save_path"], f"retrieval_results_{query_type}_20260120.csv"))
 
 
 if __name__ == "__main__":

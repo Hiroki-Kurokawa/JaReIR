@@ -1,8 +1,18 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Analyze Yahoo! Japan QA pairs dataset.
+"""
+
 import pandas as pd
 import numpy as np
 
-query_df = pd.read_csv("/mnt/LSTA6/bay1/kurokawa/yahoo_df/all_query_df.csv")
-answer_df = pd.read_csv("/mnt/LSTA6/bay1/kurokawa/yahoo_df/all_answer_df.csv")
+from src.utils.configs import load_configs
+CFG = load_configs("configs")
+
+query_df = pd.read_csv(CFG["dat_config"]["paths"]["yahoo_query_path"])
+answer_df = pd.read_csv(CFG["dat_config"]["paths"]["yahoo_answer_path"])
 print(query_df.columns)
 print(answer_df.columns)
 number_of_qids = set()

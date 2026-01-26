@@ -1,2 +1,3 @@
 paths:
   model_cache_dir: /mnt/LSTA6/bay1/kurokawa/.cache
+  INDEX_BASE_DIR: /mnt/LSTA6/bay1/kurokawa/

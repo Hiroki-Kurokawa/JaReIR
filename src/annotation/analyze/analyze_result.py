@@ -1,10 +1,19 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Analyze annotation results for inter-rater reliability.
+"""
+
+
 import numpy as np
 import pandas as pd
-from collections import defaultdict, OrderedDict
-import krippendorff
+from collections import defaultdict
 import json
+import os
 import glob
-from sklearn.metrics import cohen_kappa_score
+from src.utils.configs import load_configs
+CFG = load_configs()
 np.random.seed(1)
 def irr_5way(y1, y2, labels=None):
     assert len(y1) == len(y2)
@@ -42,7 +51,7 @@ def main():
     results = pd.read_csv("analyzer/data/annotation_result.csv")
     print("Total annotations:", len(results))
 
-    query_body_paths = glob.glob("/mnt/LSTA6/bay1/kurokawa/neg_pos_list/json_data_1212/*.json")
+    query_body_paths = glob.glob(os.path.join(CFG["data_config"]["paths"]["annotation_pos_neg_json"], "*.json"))
     qid_did_to_org = {}
     for path in query_body_paths:
         with open(path, "r") as f:
@@ -76,19 +85,19 @@ def main():
     label_pairs = defaultdict(lambda : {"count" : 0, "examples" : []})
 
     already_done = defaultdict(dict)
-    reliability_data = [[np.nan] * len(qid_did_groups) for _ in range(results['worker_id'].nunique())]
     worker_id = {w: i for i, w in enumerate(results['worker_id'].unique())}
+    print(results)
+    print("Unique worker count:", len(worker_id))
+    task_per_worker_counts = {}
+    for worker in worker_id:
+        task_per_worker = results[results['worker_id'] == worker]
+        task_per_worker_counts[worker] = len(task_per_worker)
+    print("Average tasks per worker:", np.mean(list(task_per_worker_counts.values())))
     match_counts = []
     y1, y2 = [], []
   
     is_positive_counts = {"positive": 0, "negative": 0}
     for (qid, did), group in qid_did_groups:
-
-        # if len(group) < 3:
-        #     #print(group)
-        #     continue
-       # print(group, len(group))
-        # collect annotations in this group
 
         unit_key = f"{qid}_{did}"
         if unit_key not in qiddid_to_id:
@@ -119,7 +128,6 @@ def main():
                     is_positive_counts["positive"] += 1
                 else:
                     is_positive_counts["negative"] += 1
-            reliability_data[worker_id[worker]][unit_id] = labv
             # store
             if worker not in labels_by_worker:
                 labels_by_worker[worker] = {}
@@ -128,10 +136,8 @@ def main():
             labels_list.append(labv)
             workers_list.append(worker)
         if len(labels_list) != 2:
-            #print(f"QID: {qid}, DID: {did}, Labels: {labels_list}, Workers: {workers_list}")
             continue
 
-        
         if labels_list[0] == labels_list[1]:
             match_counts.append(1)
         else:
@@ -141,7 +147,6 @@ def main():
         label_pairs[label_key]["count"] += 1
         if len(label_pairs[label_key]["examples"]) < 5:
             label_pairs[label_key]["examples"].append(f"{qid},{did}")
-        #print(f"QID: {qid}, DID: {did}, Labels: {labels_list}, Workers: {workers_list}")
         already_done[qid][did] = (labels_list, workers_list)
         y1.append(labels_list[0])
         y2.append(labels_list[1])
@@ -153,8 +158,6 @@ def main():
     print("Cohen's kappa and Gwet AC1 for all pairs:")
     irr_results = irr_5way(y1, y2)
     print(irr_results)
-    alpha = krippendorff.alpha(reliability_data=reliability_data, level_of_measurement='nominal')
-    print("Krippendorff's alpha:", alpha)
     print("Aggregate agreement rate:", np.mean(match_counts))
     # other stats from original
     avg_time = results["time"].mean()
@@ -163,9 +166,6 @@ def main():
     print("Standard deviation of annotation time (seconds):", std_time)
     print("Annotation time range (seconds):", (results["time"].min(), results["time"].max()))
     print("Cost Estimation", avg_time * 496 * 2 * 1100 / 3600 ) # 496: query
-    # print("Label pair counts:")
-    # for label_key, info in sorted(label_pairs.items(), key=lambda x: x[1]['count'], reverse=True):
-    #     print(f"Labels: {label_key}, Count: {info['count']}, Examples: {info['examples']}")
     with open("analyzer/label_pair_details.json", "w", encoding="utf-8") as f:
         json.dump(label_pairs, f, indent=4, ensure_ascii=False)
     # unanimous count
