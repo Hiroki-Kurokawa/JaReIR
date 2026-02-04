@@ -1,3 +1,4 @@
 paths:
-  retrieval_results_save_path: report/retrieval_results
-  eval_results_save_path: report/metrics
+  query_expand_cache_dir: data/query_expand_cache
+  retrieval_results_save_path: data/retrieval_results
+  eval_results_save_path: report/

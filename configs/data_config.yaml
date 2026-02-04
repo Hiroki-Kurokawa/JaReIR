@@ -5,10 +5,12 @@ paths:
   wikipedia_dump_path: wikipedia_data/jawiki-20250801-pages-articles.xml
   wikipedia_psg_path: wikipedia_data/wiki_psg_json/
   wikipedia_index_dir: wikipedia_data/wiki_index/
-  wikipedia_psg_cache_path: wikipedia_data/wiki_all_passages.pkl
-  annotation_pos_neg_json : data/pos_neg_list/json_data/
+  wikipedia_psg_cache_path: wikipedia_data/wiki_psg_cache.pkl
+  annotation_pos_neg_json : pos_neg_list/json_data/
   first_annotation_csv_paths : data/wiki_psg_tasks/
-  final_annotation_csv_path : data/final_annotation_data/
+  final_annotation_csv_paths : data/final_annotation_data/
+  annotation_result_path : data/annotation_result.csv
+  benchmark_path : data/JaReIR-data
 
 annotation:
   num_max_positive_passages: 10
