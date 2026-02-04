@@ -50,9 +50,6 @@ class BM25Retriever:
         self.ix.set_language('ja')
 
     def retrieve(self, queries, top_k = 100):
-        """
-        検索を行う関数．スコアが高い順に top_k 件を返す
-        """
         responses = {}
         for qid, query_text in queries.items():
             hits = self.ix.search(query_text, k=top_k)

@@ -7,7 +7,7 @@ Query expansion using vLLM and BM25 retriever.
 """
 import janome.tokenizer
 from vllm import LLM, SamplingParams
-from models.BM25_retriever import BM25Retriever
+from src.model_evaluation.models.BM25_retriever import BM25Retriever
 
 class QueryExpand:
 
@@ -35,12 +35,9 @@ class QueryExpand:
         current_query = query
 
         for ridx in range(round_nums):
-            # 1) retrieve
             ranking = self.retriever_model.retrieve({0: current_query}, top_k=1000)
 
             passages = [self.corpus[doc_id] for doc_id in ranking[0].keys()]
-
-            # 2) pick top passages for prompting (filter optional)
             top_passages = []
             for p in passages:
                 if use_passage_filter:

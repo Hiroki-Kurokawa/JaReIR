@@ -11,9 +11,8 @@ from tqdm import tqdm
 import json
 from multiprocessing import Pool, cpu_count
 import os
-from JaReIR.src.utils.configs import load_configs
+from src.utils.configs import load_configs
 CFG = load_configs("configs")
-os.makedirs(CFG["data_config"]["paths"]["yahoo_json_query_dir"], exist_ok=True)
 
 def init_worker():
     global url_extractor
@@ -67,11 +66,11 @@ def worker(row):
     return None
 
 if __name__ == "__main__":
-    query_df = pd.read_csv(os.path.join(CFG["data_config"]["paths"]["yahoo_data_path"], "all_query_df.csv"))
-    answer_df = pd.read_csv(os.path.join(CFG["data_config"]["paths"]["yahoo_data_path"], "all_answer_df.csv"))
+    query_df = pd.read_csv(CFG["data_config"]["paths"]["yahoo_query_path"])
+    answer_df = pd.read_csv(CFG["data_config"]["paths"]["yahoo_answer_path"])
     query_answer_pair_df = pd.merge(query_df, answer_df, on="qid", how="inner")
     
-    os.makedirs("yahoo_json_query", exist_ok=True)
+    os.makedirs(CFG["data_config"]["paths"]["yahoo_json_query_dir"], exist_ok=True)
     
     rows = [row for _, row in query_answer_pair_df.iterrows()]
     

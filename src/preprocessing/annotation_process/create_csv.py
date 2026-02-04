@@ -14,7 +14,7 @@ import pandas as pd
 import orjson
 import re
 from multiprocessing import Pool, cpu_count
-from JaReIR.src.utils.configs import load_configs
+from src.utils.configs import load_configs
 CFG = load_configs("configs")
 np.random.seed(1)
 
@@ -147,7 +147,7 @@ def main():
             for neg_id in did_neg_pos:
                 all_data_df.loc[all_data_df['did'] == neg_id, 'is_positive'] = -1
 
-            all_data_df.to_csv(os.path.join(CFG["data_config"]["annotation"]["first_annotation_csv_paths"], f"{query_count}.csv"), index=False)
+            all_data_df.to_csv(os.path.join(CFG["data_config"]["paths"]["first_annotation_csv_paths"], f"{query_count}.csv"), index=False)
             query_count += 1
             stats["total"] += 1
     print("Processing stats:", stats)

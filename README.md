@@ -3,6 +3,7 @@
 ## Overview
 This repository contains the code and data for JaReIR, a reasoning-intensive information retrieval benchmark in Japanese. JaReIR is designed to evaluate the performance of IR models on complex queries that require reasoning over multiple pieces of information.
 ## Contents
+- `Dockerfile` `pyproject.toml` : For setting up the development environment using Docker and Poetry.
 - `configs` : Configuration files for data path. You can set the paths for Yahoo! Chiebukuro data, Wikipedia dump data, cache directory, results save directory, and so on.
 - `data` : Contains the JaReIR dataset. Due to Yahoo! Chiebukuro data usage restrictions, 
 the Yahoo! Chiebukuro data is not included in this repository. Please refer to the original source to obtain it. And also, Wikipedia passages are not included due to their large size.
@@ -34,6 +35,21 @@ the Yahoo! Chiebukuro data is not included in this repository. Please refer to t
       ```
       ANNOTATION_BASE_URL=https://your_annotation_server_url
       ```
+  - 0.4 Create a virtual environment using Docker and Poetry.
+    - Build the Docker image:
+      ```bash
+      docker build -t jareir_env .
+      ```
+    - Run the Docker container:
+      ```bash
+      docker run -it -v YOUR_LOCAL_PATH:/app --ipc=host --gpus=all jareir_env /bin/bash
+      ```
+    - Inside the Docker container, install dependencies using uv:
+      ```bash
+      uv sync
+      ```
+    - Then, you can run the code using uv run command.
+
 1. Preprocess Yahoo! Chiebukuro data using the code in `src/preprocessing/yahoo_process`.
   - Preprocessing steps include extracting question-answer pairs, filtering based on URL patterns, and removing image-based questions.
   - `analyze_yahoo.py` : Analyze the Yahoo! Chiebukuro dataset to understand its characteristics.
@@ -43,8 +59,8 @@ the Yahoo! Chiebukuro data is not included in this repository. Please refer to t
   - `get_wikipedia_passage.py` : Extract passages from Wikipedia dump data.
   - `analyze_passage.py` : Analyze the extracted Wikipedia passages to understand their characteristics.
 3. Create positive-negative passage pairs for annotation using the code in `src/preprocessing/annotation_process/get_pos_neg_candidate.py`.
-4. Remove inappropriate questions using the code in `src/preprocessing/annotation_process/remove_query.py`.
-5. Create annotation data using the code in `src/preprocessing/annotation_process/create_csv.py`.
+4. Create annotation data using the code in `src/preprocessing/annotation_process/create_csv.py`.
+5. Remove inappropriate questions using the code in `src/preprocessing/annotation_process/remove_query.py`.
 
 ## Annotation Process
 The annotation process involves several steps to ensure the quality and relevance of the dataset. The code for annotation is located in the `src/annotation` directory. 
@@ -52,7 +68,7 @@ The annotation process involves several steps to ensure the quality and relevanc
   - The server allows annotators to log in, view tasks, and submit their annotations.
   - Run the server using the command:
     ```bash
-    gunicorn -w 9 --threads 2 -b 0.0.0.0:5001 server:app
+    uv run gunicorn -w 9 --threads 2 -b 0.0.0.0:5001 src.annotation.server:app
     ```
 - `templates/` : HTML templates for the annotation interface, including guidelines and examples.
 - `lancers/` : Contains files related to the Lancers annotation platform.
@@ -61,13 +77,20 @@ The annotation process involves several steps to ensure the quality and relevanc
     - `parse_result.py` : Parse the annotation results from JSON files to a structured format.
     - `analyze_result.py` : Analyze the parsed results to compute inter-annotator agreement and other statistics.
     - `create_qrel.py` : Create qrel files from the annotation results for evaluation purposes.
+- The annotation process can be executed using the following steps:
+  1. Start the annotation server (use `server.py`).
+  2. Set up tasks on the Lancers platform using the provided HTML templates (See `lancers/SETTINGS.md`).
+  3. Annotators complete the tasks on the Lancers platform.
+  3. Collect the annotation results from the `output/` directory.
+    - Our annotation outputs are not included in this repository due to privacy concerns.
+  4. Analyze the results using the provided analysis code.
 
 ## Model Evaluation
 - The model evaluation code is located in the `src/model_evaluation` directory.
 - The main evaluation script is `retrieval.py`, which evaluates various IR models on the JaReIR benchmark.
   - If you run:
     ```bash
-    python -m src.model_evaluation.retrieval
+    uv run -m src.model_evaluation.retrieval
     ```
   - it will evaluate different models and save the results in the specified directory. 
     

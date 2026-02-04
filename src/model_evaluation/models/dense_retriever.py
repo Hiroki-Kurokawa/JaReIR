@@ -8,18 +8,15 @@ Dense retriever using SentenceTransformers and FAISS.
 from sentence_transformers import SentenceTransformer
 import faiss
 import os
-import logging
 import numpy as np
 import torch
 from tqdm import tqdm
-from multiprocessing import Pool, cpu_count
 from huggingface_hub import login
 from dotenv import load_dotenv
 from src.utils.configs import load_configs
 CFG = load_configs()
 load_dotenv()
 login(token=os.getenv("HF_TOKEN"))
-logging.basicConfig(level=logging.INFO)
 
 class SemanticRetriever:
 
@@ -38,9 +35,8 @@ class SemanticRetriever:
         if os.path.exists(save_path) and not force:
             self.index = faiss.read_index(save_path)
             self.doc_ids = [doc_id for doc_id in corpus.keys()]
-            logging.info(f"Loaded existing index from {save_path}.")
             return
-        logging.info(f"Building index at {save_path}...")
+        print("Building model index... at", save_path)
         dim = self.model.get_sentence_embedding_dimension()
         faiss_index = faiss.IndexHNSWFlat(dim, 32)
         faiss_index.hnsw.efConstruction = 200
@@ -65,16 +61,14 @@ class SemanticRetriever:
         
         faiss.write_index(faiss_index, save_path)
         self.index = faiss_index
-        logging.info("Model index built successfully.")
+        print("Model index built successfully.")
     
 
     def retrieve(self, queries, top_k = 100):
         responses = {}
         query_texts = [query for _, query in queries.items()]
         query_embeddings = np.vstack([self.__get_embedding(text) for text in query_texts]).astype("float32")
-        if None in query_embeddings:
-            logging.error("One or more query embeddings could not be computed.")
-            return None
+  
         distances, indices = self.index.search(query_embeddings, top_k)
       
         for i, (dists, inds) in enumerate(zip(distances, indices)):
@@ -88,10 +82,6 @@ class SemanticRetriever:
         return responses
     
     def __get_embedding(self, text):
-        try:
-            with torch.no_grad():
-                embedding = self.model.encode(text, convert_to_numpy=True, show_progress_bar=False)
-        except RuntimeError as e:
-            logging.error(f"Error encoding text: {e}")
-            return None
+        with torch.no_grad():
+            embedding = self.model.encode(text, convert_to_numpy=True, show_progress_bar=False)
         return embedding

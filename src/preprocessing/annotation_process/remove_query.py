@@ -6,12 +6,10 @@ Remove queries for annotation based on manual inspection.
 """
 import glob
 import os
-import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import mwparserfromhell
-import json
-from JaReIR.src.utils.configs import load_configs
+from src.utils.configs import load_configs
 CFG = load_configs("configs")
 
 json_mode = False
@@ -30,7 +28,7 @@ with open("data/already_done.txt", "r") as f:
         #print(line)
         already_done.add(line.strip())
 
-paths = glob.glob("data/wiki_psg_tasks_1214/*.csv")
+paths = glob.glob(f"{CFG['data_config']['paths']['first_annotation_csv_paths']}/*.csv")
 for path in tqdm(paths):
     df = pd.read_csv(path)
     qid = df["qid"][0]
@@ -39,7 +37,7 @@ for path in tqdm(paths):
     qid = df["qid"][0]
     topic = df["topic"][0]
     print(f"qid: {qid}, topic: {topic}")
-    user_input = input("このクエリを除外しますか？ (y/n): ")
+    user_input = input("Remove this query? (y/n): ")
     if user_input.lower() == 'y':
         remove_qids.add(qid)
     with open("data/already_done.txt", "a") as f:
@@ -47,8 +45,8 @@ for path in tqdm(paths):
     with open("data/remove_qids.txt", "w") as f:
         for rqid in remove_qids:
             f.write(f"{rqid}\n")
-print(f"除外するクエリID: {remove_qids}")
-new_saved_dir = CFG["data_config"]["paths"]["final_annotation_csv_path"]
+print(f"Removed query IDs: {remove_qids}")
+new_saved_dir = CFG["data_config"]["paths"]["final_annotation_csv_paths"]
 os.makedirs(new_saved_dir, exist_ok=True)
 counter = 0
 for path in tqdm(paths):
@@ -59,4 +57,4 @@ for path in tqdm(paths):
     df["psg"] = df["psg"].apply(lambda x : mwparserfromhell.parse(x).strip_code())
     df.to_csv(os.path.join(new_saved_dir, f"{counter}.csv"), index=False)
     counter += 1
-print(f"クエリ除外後のデータを {new_saved_dir} に保存しました。")
+print(f"Saved data after query removal to {new_saved_dir}.")

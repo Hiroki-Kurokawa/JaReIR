@@ -48,7 +48,7 @@ def irr_5way(y1, y2, labels=None):
     }
 
 def main():
-    results = pd.read_csv("analyzer/data/annotation_result.csv")
+    results = pd.read_csv(CFG["data_config"]["paths"]["annotation_result_path"])
     print("Total annotations:", len(results))
 
     query_body_paths = glob.glob(os.path.join(CFG["data_config"]["paths"]["annotation_pos_neg_json"], "*.json"))

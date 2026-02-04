@@ -39,7 +39,8 @@ This document outlines the steps for conducting annotation tasks on the Lancers 
 6. Variable File Upload
  - 「変数ファイルをアップロードし、依頼を公開する」をクリック
  - Click "変数ファイルをアップロードし、依頼を公開する"
- - Upload tasks.csv
+ - Upload tasks.csv (This file is in the `annotation/lancers/` directory)
+   - If you want to change the number of tasks, you can create your own CSV file with the same format.
  - Confirm that the task preview displays the correct work location
 7. Advance Payment
  - Set the payment method and make an advance payment

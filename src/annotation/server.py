@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Annotation server using Flask.
+"""
+
 from __future__ import annotations
 
 from flask import (
@@ -10,7 +17,8 @@ from flask import (
     url_for,
     jsonify,
 )
-import csv
+
+
 import json
 import hashlib
 import tempfile
@@ -20,6 +28,8 @@ from html import escape
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import re
+from src.utils.configs import load_configs
+CFG = load_configs("configs")
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 secret = os.environ.get("FLASK_SECRET_KEY")
@@ -115,7 +125,7 @@ def worker(task_set_id):
     
     # Construct CSV path from <task_set_id> in URL
     csv_name = f"{task_set_id}.csv"
-    csv_path = os.path.join(DATA_DIR, "wiki_psg_tasks", csv_name)
+    csv_path = os.path.join(CFG["data_config"]["paths"]["first_annotation_csv_paths"], csv_name)
 
     defaults = {
         'tasks_per_page': 3,

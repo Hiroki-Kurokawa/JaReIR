@@ -1,13 +1,21 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Parse annotation results from JSON files and save to CSV.
+"""
 
 import json
 import pandas as pd
 import glob
+from src.utils.configs import load_configs
+CFG = load_configs()
 
-result_paths = glob.glob("analyzer/lancers_extracted_data/*.json")
+result_paths = glob.glob("data/outputs/*.json")
 reject_worker_names = ["temp", ]
 result_dict = {"worker_id" : [], "qid" : [], "did": [], "label": [], "reason": [], "time" : []}
 times = {"qid" : [], "length" : [], "time" : []}
-task_paths = glob.glob("data/wiki_psg_tasks/*.csv")
+task_paths = glob.glob(f"{CFG['data_config']['paths']['final_annotation_csv_paths']}/*.csv")
 qid_to_path = {}
 for task_path in task_paths:
     df = pd.read_csv(task_path)
@@ -49,4 +57,4 @@ for path in result_paths:
         result_dict["time"].append(results["effective_elapsed_seconds"])
 df = pd.DataFrame(result_dict)
 print(df)
-df.to_csv("analyzer/data/annotation_result.csv", index=False)
+df.to_csv(CFG["data_config"]["paths"]["annotation_result_path"], index=False)

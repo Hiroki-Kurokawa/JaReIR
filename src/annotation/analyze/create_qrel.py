@@ -14,13 +14,13 @@ import json
 from collections import defaultdict
 from src.utils.configs import load_configs
 CFG = load_configs()
-INPUT_PATH = "analyzer/data/annotation_result.csv"
-SAVE_DIR = "analyzer/data/j-bright"
+
+
+INPUT_PATH = CFG["data_config"]["paths"]["annotation_result_path"]
+SAVE_DIR = CFG["data_config"]["paths"]["benchmark_path"]
 os.makedirs(SAVE_DIR, exist_ok=True)
 qrel_path = os.path.join(SAVE_DIR, "qrels.json")
 query_path = os.path.join(SAVE_DIR, "query.json")
-
-
 
 df = pd.read_csv(INPUT_PATH)
 print(df)

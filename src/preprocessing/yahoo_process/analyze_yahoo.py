@@ -11,8 +11,8 @@ import numpy as np
 from src.utils.configs import load_configs
 CFG = load_configs("configs")
 
-query_df = pd.read_csv(CFG["dat_config"]["paths"]["yahoo_query_path"])
-answer_df = pd.read_csv(CFG["dat_config"]["paths"]["yahoo_answer_path"])
+query_df = pd.read_csv(CFG["data_config"]["paths"]["yahoo_query_path"])
+answer_df = pd.read_csv(CFG["data_config"]["paths"]["yahoo_answer_path"])
 print(query_df.columns)
 print(answer_df.columns)
 number_of_qids = set()

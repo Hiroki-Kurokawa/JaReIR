@@ -1,5 +1,3 @@
-
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -14,10 +12,10 @@ import re
 import mwparserfromhell
 from tqdm import tqdm
 import glob
-from models.dense_retriever import SemanticRetriever
-from models.BM25_retriever import BM25Retriever
-from models.query_expand import QueryExpand
-from models.reranker import LLMBaseReranker, CEReranker
+from src.model_evaluation.models.dense_retriever import SemanticRetriever
+from src.model_evaluation.models.BM25_retriever import BM25Retriever
+from src.model_evaluation.models.query_expand import QueryExpand
+from src.model_evaluation.models.reranker import LLMBaseReranker, CEReranker
 from ranx import compare, Qrels, Run, fuse
 from multiprocessing import Pool, cpu_count 
 import torch
@@ -27,6 +25,7 @@ from dotenv import load_dotenv
 from src.utils.configs import load_configs
 CFG = load_configs()
 load_dotenv()
+
 compare_model_name_list = {
     "bm25" : BM25Retriever,
     "tohoku-nlp/bert-base-japanese-v3" : SemanticRetriever,
@@ -134,8 +133,9 @@ def load_passages(data_dir):
 
 def main():
     
-    queries, qrels, excluded_dids, query_difficulty = get_query("data/j-bright_v1")
+    queries, qrels, excluded_dids, query_difficulty = get_query(CFG["data_config"]["paths"]["benchmark_path"])
     all_passages = load_passages(CFG["data_config"]["paths"]["wikipedia_psg_path"])
+    os.makedirs(os.path.dirname(CFG["data_config"]["paths"]["wikipedia_psg_cache_path"]), exist_ok=True)
     with open(CFG["data_config"]["paths"]["wikipedia_psg_cache_path"], "wb") as f:
         pickle.dump(all_passages, f)
     with open(CFG["data_config"]["paths"]["wikipedia_psg_cache_path"], "rb") as f:
@@ -161,9 +161,10 @@ def main():
     torch.cuda.empty_cache()
     gc.collect()
     del query_expander
-    with open("expanded_queries.pkl", "wb") as file:
+    os.makedirs(CFG["retrieval_config"]["paths"]["query_expand_cache_dir"], exist_ok=True)
+    with open(os.path.join(CFG["retrieval_config"]["paths"]["query_expand_cache_dir"], "expanded_queries.pkl"), "wb") as file:
         pickle.dump(expanded_queries, file)
-    with open("expanded_queries.pkl", "rb") as file:
+    with open(os.path.join(CFG["retrieval_config"]["paths"]["query_expand_cache_dir"], "expanded_queries.pkl"), "rb") as file:
         expanded_queries = pickle.load(file)
 
     all_results = retreive(all_passages, queries)
@@ -185,7 +186,7 @@ def main():
                 reranker_instance = CEReranker(model_path_or_name=item["model_path_or_name"], corpus=all_passages, query_dict=queries)
             else:
                 reranker_instance = LLMBaseReranker(model_path_or_name=item["model_path_or_name"], corpus=all_passages, query_dict=queries)
-            reranked_result = reranker_instance.reranking(results, context=None, top_k=20)
+            reranked_result = reranker_instance.reranking(results, top_k=20)
             reranker_name = item["method"]
             tmp_results[f"{model_name}_Reranker_{reranker_name}"] = reranked_result
             del reranker_instance
@@ -193,6 +194,7 @@ def main():
             gc.collect()
         
     all_results.update(tmp_results)
+    os.makedirs(CFG["retrieval_config"]["paths"]["retrieval_results_save_path"], exist_ok=True)
     with open(os.path.join(CFG["retrieval_config"]["paths"]["retrieval_results_save_path"], "all_retrieval_results.pkl"), "wb") as f:
         pickle.dump(all_results, f)
     with open(os.path.join(CFG["retrieval_config"]["paths"]["retrieval_results_save_path"], "all_retrieval_results.pkl"), "rb") as f:

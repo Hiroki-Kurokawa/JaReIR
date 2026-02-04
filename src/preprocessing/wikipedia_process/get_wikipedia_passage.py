@@ -6,7 +6,6 @@ Get Wikipedia passages by section from Wikipedia dump.
 """
 
 from lxml import etree
-from bs4 import BeautifulSoup
 import mwparserfromhell
 from multiprocessing import Pool, cpu_count
 import os
@@ -14,7 +13,7 @@ import json
 import re
 from tqdm import tqdm
 from collections import defaultdict
-from JaReIR.src.utils.configs import load_configs
+from src.utils.configs import load_configs
 CFG = load_configs("configs")
 os.makedirs(CFG["data_config"]["paths"]["wikipedia_psg_path"], exist_ok=True)
 

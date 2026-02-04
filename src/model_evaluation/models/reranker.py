@@ -38,9 +38,6 @@ class LLMBaseReranker:
         self.token_id_b = self._get_token_ids("B")
         self.token_id_true  = self._get_token_ids("true")
         self.token_id_false = self._get_token_ids("false")
-        if self.method.startswith("prp"):
-            assert self.token_id_a is not None and self.token_id_b is not None
-
         self.prp_prompt_template = """
 質問と2つの文章（AとB）を与えられます。
 どちらの文章が質問に対してより関連性が高いかを判断してください。
@@ -66,7 +63,7 @@ class LLMBaseReranker:
         ids = self.tokenizer.encode(s, add_special_tokens=False)
         return ids[0] if len(ids) == 1 else None
 
-    def reranking(self, ranking_list, context=None, top_k = 20):
+    def reranking(self, ranking_list, top_k = 20):
         """
         ranking list:
         {
@@ -76,30 +73,20 @@ class LLMBaseReranker:
         """
         
         res = copy.deepcopy(ranking_list)
-        output_count = {"A" : 0, "B" : 0}
         for qid, doc_dict in ranking_list.items():
             print("Processing query:", qid)
-            res = self.__prp_sliding_k(doc_dict, qid, context, top_k, res)
-        print(output_count)
+            res = self.__prp_sliding_k(doc_dict, qid, top_k, res)
         return res
 
-    def __get_prp_scores(self, context, qid, psg1_id, psg2_id):
+    def __get_prp_scores(self, qid, psg1_id, psg2_id):
         psg1 = self.corpus[psg1_id]
         psg2 = self.corpus[psg2_id]
-        if context is not None:
-            prompt = self.prp_prompt_template.format(
-                question=self.query_dict[qid],
-                passage_a=psg1,
-                passage_b=psg2,
-                context=context
-            )
-        else:
-            prompt = self.prp_prompt_template.format(
-                question=self.query_dict[qid],
-                passage_a=psg1,
-                passage_b=psg2,
-                context=""
-            )
+
+        prompt = self.prp_prompt_template.format(
+            question=self.query_dict[qid],
+            passage_a=psg1,
+            passage_b=psg2,
+        )
         inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096).to(self.model.device)
         with torch.no_grad():
             outputs = self.model(**inputs)
@@ -108,7 +95,7 @@ class LLMBaseReranker:
         score_b = next_token_logits[self.token_id_b].item()
         return score_a, score_b
     
-    def __prp_sliding_k(self, doc_dict, qid, context, top_k, res, sliding_k = 10):
+    def __prp_sliding_k(self, doc_dict, qid, top_k, res, sliding_k = 10):
 
 
         sorted_docs = sorted(doc_dict.items(), key=lambda x: x[1], reverse=True)[:top_k]
@@ -118,7 +105,7 @@ class LLMBaseReranker:
             for j in range(n - 1, 0, -1):
                 pair_1_doc_id = passage_ids[j]
                 pair_2_doc_id = passage_ids[j - 1]
-                score_a, score_b = self.__get_prp_scores(context, qid, pair_1_doc_id, pair_2_doc_id)
+                score_a, score_b = self.__get_prp_scores(qid, pair_1_doc_id, pair_2_doc_id)
                 if score_a > score_b: # If the latter is better, swap
                     passage_ids[j], passage_ids[j - 1] = passage_ids[j - 1], passage_ids[j]
         for rank, doc_id in enumerate(passage_ids):
