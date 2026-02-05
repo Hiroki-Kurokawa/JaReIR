@@ -3,7 +3,7 @@
 ## Overview
 This repository contains the code and data for JaReIR, a reasoning-intensive information retrieval benchmark in Japanese. JaReIR is designed to evaluate the performance of IR models on complex queries that require reasoning over multiple pieces of information.
 ## Contents
-- `Dockerfile` `pyproject.toml` : For setting up the development environment using Docker and Poetry.
+- `Dockerfile` `pyproject.toml` : For setting up the development environment using Docker and uv.
 - `configs` : Configuration files for data path. You can set the paths for Yahoo! Chiebukuro data, Wikipedia dump data, cache directory, results save directory, and so on.
 - `data` : Contains the JaReIR dataset. Due to Yahoo! Chiebukuro data usage restrictions, 
 the Yahoo! Chiebukuro data is not included in this repository. Please refer to the original source to obtain it. And also, Wikipedia passages are not included due to their large size.
