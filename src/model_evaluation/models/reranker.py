@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 class LLMBaseReranker:
  
     def __init__(self, model_path_or_name, corpus, query_dict):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path_or_name, use_fast=True, cache_dir="/mnt/LSTA6/bay7/kurokawa/.cache")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path_or_name, use_fast=True, cache_dir="/.cache")
         self.model_path_or_name = model_path_or_name
 
         self.model = AutoModelForCausalLM.from_pretrained(

@@ -13,7 +13,7 @@ class QueryExpand:
 
     def __init__(self, model_path_or_name, corpus, index_dir):
         
-        self.model = LLM(model=model_path_or_name, dtype="bfloat16", trust_remote_code=True, download_dir="/mnt/LSTA6/bay7/kurokawa/.vllm_cache/", max_model_len=32768)
+        self.model = LLM(model=model_path_or_name, dtype="bfloat16", trust_remote_code=True, download_dir=".vllm_cache/", max_model_len=32768)
         self.corpus = corpus
         self.retriever_model = BM25Retriever(corpus, index_dir=index_dir, force=False)
 
