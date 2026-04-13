@@ -28,7 +28,7 @@ from multiprocessing import Pool, cpu_count
 from src.utils.configs import load_configs
 CFG = load_configs("configs")
 
-MODEL = SentenceTransformer("sbintuitions/sarashina-embedding-v1-1b", cache_folder=CFG["model_config"]["paths"]["model_cache_dir"], device="cuda")
+MODEL = SentenceTransformer("sbintuitions/sarashina-embedding-v2-1b", cache_folder=CFG["model_config"]["paths"]["model_cache_dir"], device="cuda")
 TOKENIZER = janome.tokenizer.Tokenizer()
 
 def get_query(all_query_dir):
@@ -135,6 +135,7 @@ def build_faiss_index(jsonl_paths):
         arr = np.ascontiguousarray(np.vstack(batch_embeddings).astype("float32"))
         faiss_index.add(arr)
     #cpu_index_from_gpu = faiss.index_gpu_to_cpu(gpu_index)
+    os.makedirs(CFG["data_config"]["paths"]["wikipedia_index_dir"], exist_ok=True)
     faiss.write_index(faiss_index, os.path.join(CFG["data_config"]["paths"]["wikipedia_index_dir"], "wiki_psg_faiss_sb.index"))
     #faiss.write_index(cpu_index_from_gpu, f"{INDEX_DIR}/wiki_psg_faiss.index")
     print(f"FAISS index with {faiss_index.ntotal} vectors created and saved.")
