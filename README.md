@@ -1,7 +1,7 @@
 # Analysis of Reasoning-Intensive Retrieval in Japanese
 
 ## Overview
-This repository provides code, some data, and analysis code for constructing a reasoning-intensive retrieval benchmark in Japanese.
+This repository provides code, some data for constructing a reasoning-intensive retrieval benchmark in Japanese.
 
 ## Contents
 - `Dockerfile` `pyproject.toml` : For setting up the development environment using Docker and uv.
@@ -18,7 +18,7 @@ the Yahoo! Chiebukuro data is not included in this repository. Please refer to t
 - `report` : Contains the report and analysis of the benchmark results.
 - `src` : Source code for data processing, annotation and model evaluation.
   - `annoation` : Code for annotating the dataset.
-  - `BRIGHT_translation` : Code for translating the BRIGHT dataset into Japanese using LLMs.
+  - `bright_translation` : Code for translating the BRIGHT dataset into Japanese using LLMs.
   - `model_evaluation` : Code for evaluating IR models on the JaReIR benchmark.
   - `preprocessing` : Code for preprocessing the Yahoo! Chiebukuro data and Wikipedia passages.
     - `annotation_process` : Code for processing annotated data.
@@ -88,13 +88,14 @@ The annotation process involves several steps to ensure the quality and relevanc
   4. Analyze the results using the provided analysis code.
 
 ## BRIGHT Dataset Translation
-- The code for translating the BRIGHT dataset into Japanese using LLMs is located in the `src/BRIGHT_translation` directory.
-- The main translation script is `translate.py`, which uses LLMs to translate the BRIGHT dataset into Japanese.
+- The code for translating the BRIGHT dataset into Japanese using LLMs is located in the `src/bright_translation` directory.
+- The main translation script is `translation.py`, which uses LLMs to translate the BRIGHT dataset into Japanese.
   - If you run:
     ```bash
-    uv run -m src.BRIGHT_translation.translate
+    uv run -m src.bright_translation.translation
     ```
   - it will translate the BRIGHT dataset and save the translated version in the specified directory.
+  - BRIGHT translation data is available at https://figshare.com/s/dbf439fde13fe8e6ee7a
   
 
 ## Model Evaluation
@@ -105,5 +106,5 @@ The annotation process involves several steps to ensure the quality and relevanc
     uv run -m src.model_evaluation.retrieval
     ```
   - it will evaluate different models and save the results in the specified directory. 
-    
+- BRIGHT translation script is `retrieval_bright.py`, and document-level script is `full_retrieval.py`. If you want to evaluate on the BRIGHT dataset or do document-level retrieval, you can run these scripts instead.
 - `models/` : Contains implementations of different IR models, including BM25, Semantic Retriever. Also code includes code for query expansion using LLMs and reranking.
