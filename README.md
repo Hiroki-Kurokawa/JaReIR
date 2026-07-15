@@ -108,3 +108,20 @@ The annotation process involves several steps to ensure the quality and relevanc
   - it will evaluate different models and save the results in the specified directory. 
 - BRIGHT translation script is `retrieval_bright.py`, and document-level script is `full_retrieval.py`. If you want to evaluate on the BRIGHT dataset or do document-level retrieval, you can run these scripts instead.
 - `models/` : Contains implementations of different IR models, including BM25, Semantic Retriever. Also code includes code for query expansion using LLMs and reranking.
+
+## Citation
+
+If you use this code in your research, please cite our paper:
+
+```bibtex
+@inproceedings{kurokawa2026analysis,
+  author    = {Kurokawa, Hiroki and Kameko, Hirotaka and Mori, Shinsuke},
+  title     = {Analysis of Reasoning-Intensive Retrieval in Japanese},
+  booktitle = {Proceedings of the 2026 International ACM SIGIR Conference on Innovative Concepts and Theories in Information Retrieval},
+  series    = {ICTIR '26},
+  pages     = {187--198},
+  year      = {2026},
+  publisher = {Association for Computing Machinery},
+  doi       = {10.1145/3805713.3820433}
+}
+```
