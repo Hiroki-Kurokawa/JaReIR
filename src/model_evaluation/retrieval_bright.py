@@ -75,7 +75,7 @@ def run(all_passages, queries, qrels, split_name):
     qe_cache_path = os.path.join(f"bright_index/query_expand_{split_name}_cache", "pseudo_expanded_queries.pkl")
     if not os.path.exists(qe_cache_path):
         query_expander = QueryExpand(
-            model_path_or_name="Qwen/Qwen3-30B-A3B-Instruct-2507",
+            model_path_or_name="Qwen/Qwen3-30B-A3B-Thinking-2507",
             corpus=all_passages,
             index_dir = os.path.join("bright_index", f"bm25_index_{split_name}"),
         )

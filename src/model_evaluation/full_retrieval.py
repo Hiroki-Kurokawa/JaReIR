@@ -56,7 +56,11 @@ def get_query(all_query_dir):
         qrels[qid] = {str(psg_id): score for psg_id, score in values.items()}
     
     for qid, values in qrels.items():
-        qrels[qid] = {psg_id.split("_")[0] : score for psg_id, score in values.items()}
+        article_qrels = {}
+        for psg_id, score in values.items():
+            article_id = psg_id.split("_", 1)[0]
+            article_qrels[article_id] = max(article_qrels.get(article_id, 0), score)
+        qrels[qid] = article_qrels
    
     print(f"Loaded {len(queries)} queries and {len(qrels)} qrels from {all_query_dir}")
     return queries, qrels, {}, query_difficulty
