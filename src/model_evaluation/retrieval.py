@@ -8,8 +8,6 @@ Model evaluation for retrieval models.
 import os
 import json
 import orjson
-import re
-import mwparserfromhell
 from tqdm import tqdm
 import glob
 from src.model_evaluation.models.dense_retriever import SemanticRetriever
@@ -22,6 +20,7 @@ import torch
 import gc
 import pickle
 from dotenv import load_dotenv
+from src.preprocessing.wikipedia_process.passage_text import format_passage_text, is_searchable_length
 from src.utils.configs import load_configs
 CFG = load_configs()
 load_dotenv()
@@ -100,25 +99,9 @@ def worker_for_load_jsonl(jsonl_path):
     with open(jsonl_path, "r") as f:
         for line in tqdm(f):
             data = json.loads(line)
-            psg_id = data["id"]
-            title = " ".join(data["section_titles"])
-            title = re.sub(r'_dup\d+', '', title)
-            text = data["text"]
-        
-            text = mwparserfromhell.parse(text).strip_code()
-            text = re.sub(r'[\ud800-\udfff]', '', text)
-            text = text.replace("\x00", "")
-            text = text.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
-            all_text = title + "\n" + text
-            text_length = len(all_text)
-            if text_length > 1094 or  text_length < 29:
-                continue
-            else:
-                if not isinstance(text, str) or not isinstance(title, str):
-                    print(title, type(title))
-                    print(text, type(text))
-                    raise ValueError("Invalid text or title")
-                passages[str(psg_id)] = all_text
+            text = format_passage_text(data)
+            if is_searchable_length(len(text)):
+                passages[str(data["id"])] = text
 
     return passages
 
@@ -149,7 +132,7 @@ def main():
 
     print(f"Loaded {len(all_passages)}")
     query_expander = QueryExpand(
-        model_path_or_name="Qwen/Qwen3-30B-A3B-Instruct-2507",
+        model_path_or_name="Qwen/Qwen3-30B-A3B-Thinking-2507",
         corpus=all_passages,
         index_dir = os.path.join(CFG["model_config"]["paths"]["INDEX_BASE_DIR"], "bm25_index")
     )

@@ -129,52 +129,25 @@ def extract_section_hierarchy(wikitext):
     heading = wikicode.filter_headings()
     part_tree = {}
     if heading:
-        pre_parent_num = -1
-        pre_parent_name = None
+        ancestors = []
         duplicate_count = defaultdict(int)
         for head in heading:
             if head.count("=") > 2 and head.count("==") == 0:
                 continue
-            if pre_parent_num == -1:
-                pre_parent_num = head.count("=") // 2
-                title = head.replace("=", "").strip()
-                title = title_format(title)
-                part_tree[title] = {"parent" : None, "child" : [] , "tag" : pre_parent_num}
-                pre_parent_name = title
-            else:
-                current_count = head.count("=") // 2
-                title = head.replace("=", "").strip()
-                title = title_format(title)
-                if title in part_tree:
-                    duplicate_count[title] += 1
-                    title = title + "_dup" + str(duplicate_count[title])
-                if pre_parent_num == current_count:
-                    tmp_parent = part_tree[pre_parent_name]["parent"]
-                    if tmp_parent is not None:
-                        part_tree[tmp_parent]["child"].append(title)
-                    part_tree[title] = {"parent" : tmp_parent, "child" : [], "tag" : current_count}
-                    pre_parent_name = title
-                elif pre_parent_num < current_count:
-                    part_tree[pre_parent_name]["child"].append(title)
-                    part_tree[title] = {"parent" : pre_parent_name, "child" : [], "tag" : current_count}
-                    pre_parent_num = current_count
-                    pre_parent_name = title
-                else:
-                    while_counter = 0
-                    while pre_parent_num > current_count and pre_parent_name is not None:
-                        #print("Going up from:", pre_parent_name,  pre_parent_num, current_count, duplicate_count)
-                        pre_parent_num = part_tree[pre_parent_name]["tag"]
-                        pre_parent_name = part_tree[pre_parent_name]["parent"]
-                        while_counter += 1
-                        if while_counter > 10000:
-                            raise RuntimeError("Infinite loop detected in section hierarchy parsing.")
+            current_count = head.count("=") // 2
+            title = head.replace("=", "").strip()
+            title = title_format(title)
+            if title in part_tree:
+                duplicate_count[title] += 1
+                title = title + "_dup" + str(duplicate_count[title])
 
-                    tmp_parent = part_tree[pre_parent_name]["parent"] if pre_parent_name is not None else None
-                    if tmp_parent is not None:
-                        part_tree[tmp_parent]["child"].append(title)
-                    part_tree[title] = {"parent" : tmp_parent, "child" : [], "tag" : current_count}
-                    pre_parent_num = current_count
-                    pre_parent_name = title
+            while ancestors and ancestors[-1][0] >= current_count:
+                ancestors.pop()
+            tmp_parent = ancestors[-1][1] if ancestors else None
+            if tmp_parent is not None:
+                part_tree[tmp_parent]["child"].append(title)
+            part_tree[title] = {"parent" : tmp_parent, "child" : []}
+            ancestors.append((current_count, title))
         #print(part_tree)
         wikitext_split = wikitext.split("\n")
         

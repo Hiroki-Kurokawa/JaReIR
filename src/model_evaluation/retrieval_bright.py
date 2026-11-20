@@ -24,6 +24,10 @@ import gc
 import pickle
 CFG = load_configs()
 
+EVALUATION_SPLITS = {
+    "biology", "earth_science", "economics", "psychology",
+    "robotics", "stackoverflow", "sustainable_living",
+}
 
 compare_model_name_list = {
     "bm25" : BM25Retriever,
@@ -42,6 +46,9 @@ def load_worker(jsonl_path):
             passages[psg_id] = psg
     return passages
 
+def bm25_index_dir(split_name):
+    return os.path.join("bright_index", f"bm25_index_{split_name}")
+
 def retreive(all_passages, queries, split_name):
     all_results = {}
     for model_name, model_class in compare_model_name_list.items():
@@ -57,7 +64,7 @@ def retreive(all_passages, queries, split_name):
         else:  # BM25Retriever
             model_instance = model_class(
                 corpus=all_passages,
-                index_dir= os.path.join("/bright_index", f"bm25_index_{split_name}"),
+                index_dir=bm25_index_dir(split_name),
                 force=False
             )
         print(f"Evaluating model: {model_name}")
@@ -77,7 +84,7 @@ def run(all_passages, queries, qrels, split_name):
         query_expander = QueryExpand(
             model_path_or_name="Qwen/Qwen3-30B-A3B-Thinking-2507",
             corpus=all_passages,
-            index_dir = os.path.join("bright_index", f"bm25_index_{split_name}"),
+            index_dir=bm25_index_dir(split_name),
         )
         expanded_queries = {}
         for qid, query in tqdm(queries.items()):
@@ -155,11 +162,9 @@ def main():
 
 
     print(f"Loaded {len(all_passages)}")
-    split_names = sorted(set(qid.split(":")[0] for qid in queries))
+    split_names = sorted(EVALUATION_SPLITS.intersection(qid.partition(":")[0] for qid in queries))
     print(f"Query splits: {split_names}")
     for split_name in split_names:
-        if split_name not in ["stackoverflow"]:
-            continue
         split_queries = {qid: queries[qid] for qid in queries if qid.startswith(split_name + ":")}
         split_qrels = {qid: qrels[qid] for qid in qrels if qid.startswith(split_name + ":")}
         split_passages = {did: all_passages[did] for did in all_passages.keys() if did.startswith(split_name + ":")}

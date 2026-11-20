@@ -155,7 +155,7 @@ def main():
     print(f"Loaded {len(all_passages)} documents.")
 
     query_expander = QueryExpand(
-        model_path_or_name="Qwen/Qwen3-30B-A3B-Instruct-2507",
+        model_path_or_name="Qwen/Qwen3-30B-A3B-Thinking-2507",
         corpus=all_passages,
         index_dir = os.path.join("full_wiki_index", "bm25_index")
     )

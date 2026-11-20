@@ -8,10 +8,7 @@ Get negative candidate passage for annotation from Yahoo! Japan QA pairs.
 import os
 from matplotlib.pyplot import title
 from sentence_transformers import SentenceTransformer
-import urllib
-import urllib.parse
-import re
-import mwparserfromhell
+from urllib.parse import parse_qs, unquote, urlsplit
 
 import numpy as np
 import json
@@ -25,6 +22,10 @@ import subprocess
 from pyserini.search.lucene import LuceneSearcher
 import pickle
 from multiprocessing import Pool, cpu_count 
+from src.preprocessing.wikipedia_process.passage_text import (
+    format_passage_text as process_text,
+    is_searchable_length,
+)
 from src.utils.configs import load_configs
 CFG = load_configs("configs")
 
@@ -47,17 +48,6 @@ def tokenize_text(task):
     doc_id, text = task
     return doc_id, [token for token in TOKENIZER.tokenize(text, wakati=True) if token not in [" ", "\n"]]
 
-def process_text(data):
-    title = " ".join(data["section_titles"])
-    title = re.sub(r'_dup\d+', '', title)
-    text = data["text"]
-    text = mwparserfromhell.parse(text).strip_code()
-    text = re.sub(r'[\ud800-\udfff]', '', text)
-    text = text.replace("\x00", "")
-    text = text.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
-    text = title + "\n" + text.strip()
-    return text
-
 def pyserini_load_text(jsonl_path):
     save_pyserini_data = []
     with open(jsonl_path, "r", encoding="utf-8") as f:
@@ -65,7 +55,7 @@ def pyserini_load_text(jsonl_path):
             data = json.loads(line)
             psg_id = data["id"]
             psg = process_text(data)
-            if len(psg) > 1094 or len(psg) < 29:
+            if not is_searchable_length(len(psg)):
                 continue
             save_pyserini_data.append({"id": psg_id, "contents": psg})
     return save_pyserini_data
@@ -110,7 +100,7 @@ def build_faiss_index(jsonl_paths):
                 data = json.loads(line)
                 psg_id = data["id"]
                 text = process_text(data)
-                if len(text) > 1094 or len(text) < 29:
+                if not is_searchable_length(len(text)):
                     continue
                 batch_texts.append(text)
                 faiss_id_converter[str(count)] = psg_id
@@ -162,17 +152,33 @@ def load_indexes(data_dir):
             for line in tqdm(f):
                 data = json.loads(line)
                 psg_id = data["id"]
+                if not is_searchable_length(len(process_text(data))):
+                    continue
                 psg = data["title"] + "\n" + data["text"].strip()
                 passages[psg_id] = {"title": data["title"], "psg": psg}
     print(f"Loaded {len(passages)} passages from {data_dir}")
     
     return doc_ids, bm25, faiss_id_converter, faiss_index, passages
 
+def normalize_article_title(title):
+    return " ".join(title.replace("_", " ").split())
+
+def article_title_from_url(url):
+    parts = urlsplit(url)
+    _, wiki_prefix, path_title = parts.path.partition("/wiki/")
+    if wiki_prefix:
+        title = unquote(path_title)
+    elif parts.path.endswith("/w/index.php"):
+        title = parse_qs(parts.query).get("title", [""])[0]
+    else:
+        return ""
+    return normalize_article_title(title.partition("#")[0])
+
 def get_positive_documents(wiki_title, documents):
     res = []
-    wiki_title_normalized = wiki_title.replace("_", " ")
+    wiki_title_normalized = normalize_article_title(wiki_title)
     for doc_id, doc_info in documents.items():
-        if doc_info["title"].startswith(wiki_title_normalized):
+        if normalize_article_title(doc_info["title"]) == wiki_title_normalized:
             res.append({"doc_id" : doc_id, "info" : doc_info})
     return res
 
@@ -213,18 +219,13 @@ def main():
     for query_id, query_body in tqdm(queries.items()):
         query = query_body["q_title"] + query_body["q_body"]
         query_wiki_url = query_body["ans_url"]
-        wiki_title = urllib.parse.unquote(query_wiki_url.split("/")[-1])
+        wiki_title = article_title_from_url(query_wiki_url)
         print(query_wiki_url)
         print(wiki_title)
         print(query)
-        if len(wiki_title.strip()) == 0:
+        if not wiki_title:
             print("Empty wiki title, skipping...")
             continue
-        if "#" in wiki_title:   
-            wiki_title = wiki_title.split("#")[0]
-        if " " in wiki_title and "(" in wiki_title:
-            wiki_title = wiki_title.replace(" ", "_")
-        wiki_title = wiki_title.split()[0]
         positive_doc_id_and_info = get_positive_documents(wiki_title, passages)
         
         negative_ranking_list_bm = get_negative_ranking_list(query, bm25=bm25, dense=None)
